@@ -1,7 +1,7 @@
 import { useTVs } from '@/hooks/useTVs';
 import { useEvents } from '@/hooks/useEvents';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tv, Calendar, Clock, Activity, Zap, MapPin } from 'lucide-react';
+import { Tv, Calendar, Clock, Activity, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -15,29 +15,29 @@ const AdminDashboard = () => {
       label: 'TVs Cadastradas',
       value: tvs.length,
       icon: Tv,
-      gradient: 'from-primary to-cyan-400',
+      gradient: 'from-primary to-amber-400',
       bg: 'bg-primary/10',
     },
     {
       label: 'Eventos Totais',
       value: events.length,
       icon: Calendar,
-      gradient: 'from-secondary to-blue-400',
+      gradient: 'from-secondary to-orange-400',
       bg: 'bg-secondary/10',
     },
     {
       label: 'Eventos Ativos',
       value: activeEvents.length,
       icon: Activity,
-      gradient: 'from-accent to-emerald-400',
-      bg: 'bg-accent/10',
+      gradient: 'from-emerald-500 to-green-400',
+      bg: 'bg-emerald-500/10',
     },
     {
       label: 'Próximos Eventos',
       value: upcomingEvents.length,
       icon: Clock,
-      gradient: 'from-amber-500 to-orange-400',
-      bg: 'bg-amber-500/10',
+      gradient: 'from-sky-500 to-blue-400',
+      bg: 'bg-sky-500/10',
     },
   ];
 
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <Zap className="w-8 h-8 text-primary" />
+          <img src="/icon.png" alt="Ágora" className="w-8 h-8" />
           Dashboard
         </h1>
         <p className="text-muted-foreground">
