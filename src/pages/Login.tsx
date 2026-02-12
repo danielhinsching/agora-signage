@@ -5,10 +5,10 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, User, Sun, Moon } from 'lucide-react';
+import { Lock, Mail, Sun, Moon } from 'lucide-react';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,15 +21,16 @@ const Login = () => {
     setError('');
     setIsLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const success = login(username, password);
-    if (success) {
-      navigate('/admin');
-    } else {
-      setError('Credenciais inválidas. Tente novamente.');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/admin');
+      }
+    } catch (err) {
+      setError('Erro ao fazer login. Verifique suas credenciais.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -75,17 +76,17 @@ const Login = () => {
         <div className="glass-card-strong p-8 rounded-2xl fade-in-up" style={{ animationDelay: '0.1s' }}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium">
-                Usuário
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
               </Label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Digite seu usuário"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Digite seu email"
                   className="pl-12 h-12 bg-input/50 border-border/50 focus:border-primary rounded-xl"
                   required
                 />
@@ -135,13 +136,11 @@ const Login = () => {
           <div className="mt-8 pt-6 border-t border-border/30">
             <div className="glass-card p-4 rounded-xl">
               <p className="text-xs text-muted-foreground text-center mb-2">
-                Credenciais de demonstração:
+                Para acessar, configure um usuário no Firebase Authentication
               </p>
-              <div className="flex items-center justify-center gap-4 text-sm">
-                <span className="chip chip-primary">admin</span>
-                <span className="text-muted-foreground">/</span>
-                <span className="chip chip-secondary">agora2024</span>
-              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Consulte o README para instruções
+              </p>
             </div>
           </div>
         </div>

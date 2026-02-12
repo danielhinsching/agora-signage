@@ -18,6 +18,7 @@ export interface Event {
   startDateTime: string;
   endDateTime: string;
   tvIds: string[]; // Array of TV IDs where this event should be displayed
+  tags: string[]; // Professional areas/categories
   createdAt: string;
 }
 
@@ -31,6 +32,30 @@ export interface AppState {
   events: Event[];
   user: User | null;
 }
+
+// Professional areas/tags for events
+export const PROFESSIONAL_TAGS = [
+  'Medicina',
+  'Tecnologia',
+  'Educação',
+  'Psicologia',
+  'Direito',
+  'Engenharia',
+  'Arquitetura',
+  'Design',
+  'Marketing',
+  'Negócios',
+  'Hackathon',
+  'Workshop',
+  'Palestra',
+  'Networking',
+  'Inovação',
+  'Startups',
+  'Pesquisa',
+  'Saúde',
+  'Meio Ambiente',
+  'Sustentabilidade',
+] as const;
 
 // Storage keys
 export const STORAGE_KEYS = {

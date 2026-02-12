@@ -33,7 +33,7 @@ import { Tv, Plus, Trash2, Edit, ExternalLink, Image, X, Monitor, Smartphone } f
 import { toast } from 'sonner';
 
 const TVsManagement = () => {
-  const { tvs, addTV, updateTV, deleteTV, setActiveImage, isSlugUnique } = useTVs();
+  const { tvs, loading, addTV, updateTV, deleteTV, setActiveImage, isSlugUnique } = useTVs();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTV, setEditingTV] = useState<TV | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -80,7 +80,7 @@ const TVsManagement = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isSlugUnique(formData.slug, editingTV?.id)) {
@@ -88,38 +88,59 @@ const TVsManagement = () => {
       return;
     }
 
-    if (editingTV) {
-      updateTV(editingTV.id, formData);
-      toast.success('TV atualizada com sucesso!');
-    } else {
-      addTV(formData);
-      toast.success('TV cadastrada com sucesso!');
+    try {
+      if (editingTV) {
+        await updateTV(editingTV.id, formData);
+      } else {
+        await addTV(formData);
+      }
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error saving TV:', error);
     }
-
-    setIsDialogOpen(false);
-    resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    deleteTV(id);
-    setDeleteConfirm(null);
-    toast.success('TV removida com sucesso!');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTV(id);
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting TV:', error);
+    }
   };
 
-  const handleImageUpload = (tvId: string, file: File) => {
+  const handleImageUpload = async (tvId: string, file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      setActiveImage(tvId, base64);
-      toast.success('Imagem atualizada!');
+    reader.onload = async (e) => {
+      try {
+        const base64 = e.target?.result as string;
+        await setActiveImage(tvId, base64);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveImage = (tvId: string) => {
-    setActiveImage(tvId, undefined);
-    toast.success('Imagem removida!');
+  const handleRemoveImage = async (tvId: string) => {
+    try {
+      await setActiveImage(tvId, undefined);
+    } catch (error) {
+      console.error('Error removing image:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Carregando TVs...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 custom-scrollbar">

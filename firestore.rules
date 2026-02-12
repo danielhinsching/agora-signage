@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar autenticação
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Coleção de TVs - leitura pública (para exibição), escrita apenas autenticada
+    match /tvs/{tvId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Coleção de Eventos - leitura pública (para exibição), escrita apenas autenticada
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Coleção de Usuários - apenas o próprio usuário pode ler/escrever
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}
