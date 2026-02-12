@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, startOfWeek, addDays, getDay } from "date-fns"
+import { format, startOfWeek, endOfWeek, addDays, getDay, isWithinInterval } from "date-fns"
 import { Clock, MapPin } from "lucide-react"
 
 interface AgendaGridProps {
@@ -40,17 +40,29 @@ export function AgendaGrid({
   }, [])
 
   const grouped = useMemo(() => {
+    const now = new Date()
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 })
+    const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+    
     const map = new Map<number, Event[]>()
     weekDays.forEach((wd) => {
       map.set(wd.dayOfWeek, [])
     })
-    events.forEach((event) => {
-      const start = new Date(event.startDateTime)
-      const eventDay = getDay(start)
-      if (map.has(eventDay)) {
-        map.get(eventDay)!.push(event)
-      }
-    })
+    
+    // Filtrar apenas eventos da semana atual
+    events
+      .filter((event) => {
+        const start = new Date(event.startDateTime)
+        return isWithinInterval(start, { start: weekStart, end: weekEnd })
+      })
+      .forEach((event) => {
+        const start = new Date(event.startDateTime)
+        const eventDay = getDay(start)
+        if (map.has(eventDay)) {
+          map.get(eventDay)!.push(event)
+        }
+      })
+    
     map.forEach((dayEvents) => {
       dayEvents.sort(
         (a, b) =>
