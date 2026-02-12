@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Monitor, Lock, User, Zap } from 'lucide-react';
+import { Lock, User, Sun, Moon } from 'lucide-react';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -12,6 +13,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,12 +34,21 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+      {/* Theme toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 right-4 z-20"
+        onClick={toggleTheme}
+      >
+        {resolvedTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </Button>
+
       {/* Ambient background effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
         <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/5 rounded-full blur-3xl" />
       </div>
 
       {/* Grid pattern overlay */}
@@ -52,12 +63,13 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md px-4">
         {/* Logo Section */}
         <div className="text-center mb-10 fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-secondary mb-6 animate-pulse-glow shadow-2xl shadow-primary/20">
-            <Monitor className="w-12 h-12 text-primary-foreground" />
-          </div>
+          <img
+            src="/icon.png"
+            alt="Ágora Tech Park"
+            className="w-24 h-24 mx-auto mb-6 rounded-3xl object-contain shadow-2xl"
+          />
           <h1 className="text-4xl font-bold gradient-text mb-2">Ágora LineUp</h1>
-          <p className="text-muted-foreground flex items-center justify-center gap-2">
-            <Zap className="w-4 h-4 text-primary" />
+          <p className="text-muted-foreground">
             Digital Signage Control
           </p>
         </div>

@@ -1,10 +1,12 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
-import { Monitor, Tv, Calendar, LogOut, LayoutDashboard, Zap } from 'lucide-react';
+import { Tv, Calendar, LogOut, LayoutDashboard, Sun, Moon } from 'lucide-react';
 
 const AdminLayout = () => {
   const { isAuthenticated, logout, user } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -25,19 +27,16 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="w-72 bg-card/50 backdrop-blur-xl border-r border-border/50 flex flex-col">
+      <aside className="w-72 bg-card/80 backdrop-blur-xl border-r border-border/50 flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg animate-pulse-glow">
-              <Monitor className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img
+              src="/logotext.png"
+              alt="Ágora"
+              className=" rounded-2xl object-contain"
+            />
             <div>
-              <h1 className="font-bold text-xl gradient-text">Ágora LineUp</h1>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                Digital Signage
-              </p>
             </div>
           </div>
         </div>
@@ -52,7 +51,7 @@ const AdminLayout = () => {
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 ${
                   active
-                    ? 'bg-gradient-to-r from-primary/20 to-secondary/10 text-primary border border-primary/30 shadow-lg shadow-primary/10'
+                    ? 'bg-primary/15 text-primary border border-primary/25 shadow-sm'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 }`}
               >
@@ -68,10 +67,30 @@ const AdminLayout = () => {
         </nav>
 
         {/* User Section */}
-        <div className="p-4 border-t border-border/50">
+        <div className="p-4 border-t border-border/50 space-y-3">
+          {/* Theme Toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 border-border/50"
+            onClick={toggleTheme}
+          >
+            {resolvedTheme === 'dark' ? (
+              <>
+                <Sun className="w-4 h-4 text-primary" />
+                Modo Claro
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-primary" />
+                Modo Escuro
+              </>
+            )}
+          </Button>
+
           <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
                 <span className="text-sm font-bold text-primary">
                   {user?.username.charAt(0).toUpperCase()}
                 </span>
@@ -95,7 +114,7 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto custom-scrollbar bg-gradient-to-br from-background via-background to-muted/20">
+      <main className="flex-1 overflow-auto custom-scrollbar bg-background">
         <Outlet />
       </main>
     </div>
