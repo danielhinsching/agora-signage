@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { isSameWeek } from 'date-fns';
 import { useParams } from 'react-router-dom';
 import { TV, Event, STORAGE_KEYS } from '@/types';
 import { TvHeader } from '@/components/tv/TvHeader.tsx';
@@ -26,7 +27,10 @@ function getEventsForTV(tvId: string): Event[] {
       .filter((event) => {
         const isAssigned = event.tvIds.includes(tvId);
         const end = new Date(event.endDateTime);
-        return isAssigned && end >= now;
+        const start = new Date(event.startDateTime);
+        // Show if assigned AND either not finished yet OR it's in the same week as today
+        const inSameWeek = isSameWeek(start, now, { weekStartsOn: 0 });
+        return isAssigned && (end >= now || inSameWeek);
       })
       .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
   } catch {

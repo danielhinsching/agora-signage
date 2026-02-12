@@ -34,7 +34,7 @@ const AdminLayout = () => {
             <img
               src="/logotext.png"
               alt="Ágora"
-              className=" rounded-2xl object-contain"
+              className="rounded-2xl object-contain"
             />
             <div>
             </div>

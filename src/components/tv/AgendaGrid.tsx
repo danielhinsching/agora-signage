@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Event } from '@/types';
 import { EventCard } from '@/components/tv/EventCard.tsx';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface AgendaGridProps {
@@ -16,36 +16,42 @@ export function AgendaGrid({
   orientation,
   currentDayOfWeek,
 }: AgendaGridProps) {
-  // Build the current week's days (Mon–Fri)
+  // Build the current week's days (Mon–Sun)
   const weekDays = useMemo(() => {
     const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-    return Array.from({ length: 5 }, (_, i) => {
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
+    return Array.from({ length: 7 }, (_, i) => {
       const day = addDays(weekStart, i);
       return {
         date: day,
         label: format(day, 'EEEE', { locale: ptBR }), // "segunda-feira"
         shortLabel: format(day, "EEE", { locale: ptBR }).replace('.', ''), // "seg"
         dateLabel: format(day, "dd/MM"),
-        dayIndex: (i + 1), // 1=Mon, 2=Tue...
+        dayIndex: day.getDay(), // 0=Sun,1=Mon...
       };
     });
   }, []);
 
-  // Group events by day
+  // Group events by day (include multi-day events across all days they span)
   const grouped = useMemo(() => {
     const map = new Map<string, Event[]>();
     weekDays.forEach((wd) => {
       const key = format(wd.date, 'yyyy-MM-dd');
       map.set(key, []);
     });
+
     events.forEach((event) => {
-      const eventDate = new Date(event.startDateTime);
-      const key = format(eventDate, 'yyyy-MM-dd');
-      if (map.has(key)) {
-        map.get(key)!.push(event);
+      const start = startOfDay(new Date(event.startDateTime));
+      const end = startOfDay(new Date(event.endDateTime));
+
+      for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+        const key = format(d, 'yyyy-MM-dd');
+        if (map.has(key)) {
+          map.get(key)!.push(event);
+        }
       }
     });
+
     return map;
   }, [events, weekDays]);
 
@@ -62,7 +68,7 @@ export function AgendaGrid({
 
   if (orientation === 'horizontal') {
     return (
-      <div className="flex-1 grid grid-cols-5 gap-3 p-4 overflow-hidden">
+      <div className="flex-1 grid grid-cols-7 gap-3 p-4 overflow-hidden">
         {weekDays.map((wd) => {
           const key = format(wd.date, 'yyyy-MM-dd');
           const dayEvents = grouped.get(key) || [];

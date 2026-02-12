@@ -64,14 +64,11 @@ const Login = () => {
         {/* Logo Section */}
         <div className="text-center mb-10 fade-in">
           <img
-            src="/icon.png"
+            src="/logotext.png"
             alt="Ágora Tech Park"
-            className="w-24 h-24 mx-auto mb-6 rounded-3xl object-contain shadow-2xl"
+            className="mx-auto mb-6 object-contain"
           />
-          <h1 className="text-4xl font-bold gradient-text mb-2">Ágora LineUp</h1>
-          <p className="text-muted-foreground">
-            Digital Signage Control
-          </p>
+          
         </div>
 
         {/* Login Form */}
