@@ -142,9 +142,21 @@ export function AgendaGrid({
                       </span>
                     </div>
                     {e.location && (
-                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
                         <MapPin className="w-4 h-4 text-[#F5A623] flex-shrink-0" />
                         <span>{e.location}</span>
+                      </div>
+                    )}
+                    {e.tags && e.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {e.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>

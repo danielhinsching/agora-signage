@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Event, TV } from '@/types';
+import { Event, TV, PROFESSIONAL_TAGS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Calendar as IconCalendar, Clock, Tv, X, Plus, CheckSquare } from 'lucide-react';
+import { Calendar as IconCalendar, Clock, Tv, X, Plus, CheckSquare, Tag } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -41,6 +41,7 @@ export function EventFormDialog({
     endDate: '',
     endTime: '',
     tvIds: [] as string[],
+    tags: [] as string[],
   });
 
   // Reset/populate form when dialog opens
@@ -58,6 +59,7 @@ export function EventFormDialog({
         endDate: format(endDT, 'yyyy-MM-dd'),
         endTime: format(endDT, 'HH:mm'),
         tvIds: editingEvent.tvIds,
+        tags: editingEvent.tags || [],
       });
     } else {
       const dateStr = defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '';
@@ -69,6 +71,7 @@ export function EventFormDialog({
         endDate: dateStr,
         endTime: '10:00',
         tvIds: [],
+        tags: [],
       });
     }
   }, [open, editingEvent, defaultDate]);
@@ -97,6 +100,15 @@ export function EventFormDialog({
     }));
   };
 
+  const handleTagToggle = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag],
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -114,6 +126,7 @@ export function EventFormDialog({
       startDateTime: startDateTime.toISOString(),
       endDateTime: endDateTime.toISOString(),
       tvIds: formData.tvIds,
+      tags: formData.tags,
     });
 
     onOpenChange(false);
@@ -156,6 +169,29 @@ export function EventFormDialog({
               className="bg-input/50 border-border/50 focus:border-primary"
               required
             />
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Tag className="w-4 h-4 text-primary" />
+              Áreas Profissionais
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {PROFESSIONAL_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => handleTagToggle(tag)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    formData.tags.includes(tag)
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-4">
