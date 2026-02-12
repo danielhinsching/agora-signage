@@ -1,29 +1,60 @@
-import { useCallback, useMemo } from 'react';
-import { useLocalStorage } from './useLocalStorage';
-import { Event, STORAGE_KEYS } from '@/types';
+import { useCallback, useMemo, useEffect, useState } from 'react';
+import { Event } from '@/types';
+import {
+  addEvent as dbAddEvent,
+  updateEvent as dbUpdateEvent,
+  deleteEvent as dbDeleteEvent,
+  subscribeEvents,
+} from '@/lib/db';
+import { toast } from 'sonner';
 
 export function useEvents() {
-  const [events, setEvents] = useLocalStorage<Event[]>(STORAGE_KEYS.EVENTS, []);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addEvent = useCallback((event: Omit<Event, 'id' | 'createdAt'>) => {
-    const newEvent: Event = {
-      ...event,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    setEvents((prev) => [...prev, newEvent]);
-    return newEvent;
-  }, [setEvents]);
+  // Subscribe to real-time updates from Firestore
+  useEffect(() => {
+    const unsubscribe = subscribeEvents((updatedEvents) => {
+      setEvents(updatedEvents);
+      setLoading(false);
+    });
 
-  const updateEvent = useCallback((id: string, updates: Partial<Event>) => {
-    setEvents((prev) => prev.map((event) => 
-      event.id === id ? { ...event, ...updates } : event
-    ));
-  }, [setEvents]);
+    return () => unsubscribe();
+  }, []);
 
-  const deleteEvent = useCallback((id: string) => {
-    setEvents((prev) => prev.filter((event) => event.id !== id));
-  }, [setEvents]);
+  const addEvent = useCallback(async (event: Omit<Event, 'id' | 'createdAt'>) => {
+    try {
+      const id = await dbAddEvent(event);
+      toast.success('Evento criado com sucesso!');
+      return { ...event, id, createdAt: new Date().toISOString() };
+    } catch (error) {
+      console.error('Error adding event:', error);
+      toast.error('Erro ao criar evento');
+      throw error;
+    }
+  }, []);
+
+  const updateEvent = useCallback(async (id: string, updates: Partial<Event>) => {
+    try {
+      await dbUpdateEvent(id, updates);
+      toast.success('Evento atualizado!');
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast.error('Erro ao atualizar evento');
+      throw error;
+    }
+  }, []);
+
+  const deleteEvent = useCallback(async (id: string) => {
+    try {
+      await dbDeleteEvent(id);
+      toast.success('Evento removido!');
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Erro ao remover evento');
+      throw error;
+    }
+  }, []);
 
   const getEventsForTV = useCallback((tvId: string) => {
     const now = new Date();
@@ -55,6 +86,7 @@ export function useEvents() {
 
   return {
     events,
+    loading,
     addEvent,
     updateEvent,
     deleteEvent,

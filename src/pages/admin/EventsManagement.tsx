@@ -49,7 +49,7 @@ const getLocationColor = (location: string): string => {
 };
 
 const EventsManagement = () => {
-  const { events, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { events, loading, addEvent, updateEvent, deleteEvent } = useEvents();
   const { tvs } = useTVs();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -68,22 +68,27 @@ const EventsManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (eventData: Omit<Event, 'id' | 'createdAt'>) => {
-    if (editingEvent) {
-      updateEvent(editingEvent.id, eventData);
-      toast.success('Evento atualizado com sucesso!');
-    } else {
-      addEvent(eventData);
-      toast.success('Evento cadastrado com sucesso!');
+  const handleSubmit = async (eventData: Omit<Event, 'id' | 'createdAt'>) => {
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, eventData);
+      } else {
+        await addEvent(eventData);
+      }
+      setEditingEvent(null);
+      setDefaultDate(undefined);
+    } catch (error) {
+      console.error('Error saving event:', error);
     }
-    setEditingEvent(null);
-    setDefaultDate(undefined);
   };
 
-  const handleDelete = (id: string) => {
-    deleteEvent(id);
-    setDeleteConfirm(null);
-    toast.success('Evento removido com sucesso!');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEvent(id);
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
   };
 
   const handleDeleteRequest = (eventId: string) => {
@@ -105,6 +110,17 @@ const EventsManagement = () => {
       new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
     );
   }, [events]);
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Carregando eventos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">

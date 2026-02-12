@@ -9,7 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Calendar, Clock, Tv, X, Plus, CheckSquare } from 'lucide-react';
+import { Calendar as IconCalendar, Clock, Tv, X, Plus, CheckSquare } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -160,16 +162,27 @@ export function EventFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
+                  <IconCalendar className="w-4 h-4 text-primary" />
                   Data Início
                 </Label>
-                <Input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="bg-input/50 border-border/50 focus:border-primary"
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left">
+                      {formData.startDate
+                        ? format(new Date(`${formData.startDate}T00:00:00`), 'dd/MM/yyyy')
+                        : 'Selecione a data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    <Calendar
+                      mode="single"
+                      selected={formData.startDate ? new Date(`${formData.startDate}T00:00:00`) : undefined}
+                      onSelect={(date: Date | undefined) => {
+                        if (date) setFormData((prev) => ({ ...prev, startDate: format(date, 'yyyy-MM-dd') }));
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
@@ -188,16 +201,27 @@ export function EventFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-secondary" />
+                  <IconCalendar className="w-4 h-4 text-secondary" />
                   Data Término
                 </Label>
-                <Input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="bg-input/50 border-border/50 focus:border-primary"
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left">
+                      {formData.endDate
+                        ? format(new Date(`${formData.endDate}T00:00:00`), 'dd/MM/yyyy')
+                        : 'Selecione a data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    <Calendar
+                      mode="single"
+                      selected={formData.endDate ? new Date(`${formData.endDate}T00:00:00`) : undefined}
+                      onSelect={(date: Date | undefined) => {
+                        if (date) setFormData((prev) => ({ ...prev, endDate: format(date, 'yyyy-MM-dd') }));
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">

@@ -1,38 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
+import { isSameWeek } from 'date-fns';
 import { useParams } from 'react-router-dom';
-import { TV, Event, STORAGE_KEYS } from '@/types';
+import { TV, Event } from '@/types';
 import { TvHeader } from '@/components/tv/TvHeader.tsx';
 import { TvFooter } from '@/components/tv/TvFooter.tsx';
 import { AgendaGrid } from '@/components/tv/AgendaGrid.tsx';
 import { useClock } from "@/hooks/use-clock.ts";
 import { useScreenOrientation } from "@/hooks/use-screen-orientation.ts";
-
-function getTVBySlug(slug: string): TV | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.TVS);
-    const tvs: TV[] = raw ? JSON.parse(raw) : [];
-    return tvs.find((tv) => tv.slug === slug) || null;
-  } catch {
-    return null;
-  }
-}
-
-function getEventsForTV(tvId: string): Event[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    const events: Event[] = raw ? JSON.parse(raw) : [];
-    const now = new Date();
-    return events
-      .filter((event) => {
-        const isAssigned = event.tvIds.includes(tvId);
-        const end = new Date(event.endDateTime);
-        return isAssigned && end >= now;
-      })
-      .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
-  } catch {
-    return [];
-  }
-}
+import { getTVBySlug, subscribeEventsForTV } from '@/lib/db';
 
 export default function TvPlayer() {
   const { slug = 'default' } = useParams<{ slug: string }>();
@@ -41,21 +16,42 @@ export default function TvPlayer() {
   const [tv, setTv] = useState<TV | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [fadeKey, setFadeKey] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(() => {
-    const foundTv = getTVBySlug(slug);
-    setTv(foundTv);
-    if (foundTv) {
-      setEvents(getEventsForTV(foundTv.id));
-    } else {
-      setEvents([]);
+  const loadTV = useCallback(async () => {
+    try {
+      const foundTv = await getTVBySlug(slug);
+      setTv(foundTv);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading TV:', error);
+      setLoading(false);
     }
-    setFadeKey((k) => k + 1);
   }, [slug]);
 
+  // Load TV data on mount
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadTV();
+  }, [loadTV]);
+
+  // Subscribe to events for this TV in real-time
+  useEffect(() => {
+    if (!tv) return;
+
+    const unsubscribe = subscribeEventsForTV(tv.id, (updatedEvents) => {
+      const now = new Date();
+      const filteredEvents = updatedEvents.filter((event) => {
+        const end = new Date(event.endDateTime);
+        const start = new Date(event.startDateTime);
+        const inSameWeek = isSameWeek(start, now, { weekStartsOn: 0 });
+        return end >= now || inSameWeek;
+      });
+      setEvents(filteredEvents);
+      setFadeKey((k) => k + 1);
+    });
+
+    return () => unsubscribe();
+  }, [tv]);
 
   // Force light theme (white) on TV pages and restore previous theme on unmount
   useEffect(() => {
@@ -74,20 +70,18 @@ export default function TvPlayer() {
     };
   }, []);
 
-  // Listen to localStorage changes (from admin panel in another tab)
-  useEffect(() => {
-    const handler = () => loadData();
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, [loadData]);
-
-  // Poll for changes every 10s (same-tab updates)
-  useEffect(() => {
-    const interval = setInterval(loadData, 10_000);
-    return () => clearInterval(interval);
-  }, [loadData]);
-
   const effectOrientation = tv?.orientation || orientation;
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-background flex items-center justify-center select-none">
+        <div className="text-center space-y-4">
+          <img src="/icon.png" alt="Ágora" className="w-20 h-20 mx-auto rounded-2xl opacity-60 animate-pulse" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!tv) {
     return (
