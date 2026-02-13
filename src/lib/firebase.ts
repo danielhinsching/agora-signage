@@ -5,13 +5,13 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: 'AIzaSyCBLwPBllHyp0AKT-kzDp0PnSndRcXwyPo',
+  authDomain: 'agora-lineup-bfe21.firebaseapp.com',
+  projectId: 'agora-lineup-bfe21',
+  storageBucket: 'agora-lineup-bfe21.firebasestorage.app',
+  messagingSenderId: '240984503834',
+  appId: '1:240984503834:web:c2d95aa8e0800ec5c283a3',
+  measurementId: 'G-ZCPBK932Y5',
 };
 
 // Initialize Firebase
