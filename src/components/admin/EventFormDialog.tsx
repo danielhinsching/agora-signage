@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Event, TV } from '@/types';
+import { Event, TV, PROFESSIONAL_TAGS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Calendar as IconCalendar, Clock, Tv, X, Plus, CheckSquare } from 'lucide-react';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { Tv, X, Plus, CheckSquare, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { DateTimePicker } from './DateTimePicker';
 
 interface EventFormDialogProps {
   open: boolean;
@@ -36,11 +35,10 @@ export function EventFormDialog({
   const [formData, setFormData] = useState({
     name: '',
     location: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
+    startDateTime: undefined as Date | undefined,
+    endDateTime: undefined as Date | undefined,
     tvIds: [] as string[],
+    tags: [] as string[],
   });
 
   // Reset/populate form when dialog opens
@@ -48,27 +46,28 @@ export function EventFormDialog({
     if (!open) return;
 
     if (editingEvent) {
-      const startDT = new Date(editingEvent.startDateTime);
-      const endDT = new Date(editingEvent.endDateTime);
       setFormData({
         name: editingEvent.name,
         location: editingEvent.location,
-        startDate: format(startDT, 'yyyy-MM-dd'),
-        startTime: format(startDT, 'HH:mm'),
-        endDate: format(endDT, 'yyyy-MM-dd'),
-        endTime: format(endDT, 'HH:mm'),
+        startDateTime: new Date(editingEvent.startDateTime),
+        endDateTime: new Date(editingEvent.endDateTime),
         tvIds: editingEvent.tvIds,
+        tags: editingEvent.tags || [],
       });
     } else {
-      const dateStr = defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '';
+      const startDate = defaultDate ? new Date(defaultDate) : new Date();
+      startDate.setHours(9, 0, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setHours(10, 0, 0, 0);
+      
       setFormData({
         name: '',
         location: '',
-        startDate: dateStr,
-        startTime: '09:00',
-        endDate: dateStr,
-        endTime: '10:00',
+        startDateTime: startDate,
+        endDateTime: endDate,
         tvIds: [],
+        tags: [],
       });
     }
   }, [open, editingEvent, defaultDate]);
@@ -97,13 +96,24 @@ export function EventFormDialog({
     }));
   };
 
+  const handleTagToggle = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag],
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
-    const endDateTime = new Date(`${formData.endDate}T${formData.endTime}`);
+    if (!formData.startDateTime || !formData.endDateTime) {
+      toast.error('Selecione a data e hora de início e término.');
+      return;
+    }
 
-    if (endDateTime <= startDateTime) {
+    if (formData.endDateTime <= formData.startDateTime) {
       toast.error('A data/hora de término deve ser posterior ao início.');
       return;
     }
@@ -111,9 +121,10 @@ export function EventFormDialog({
     onSubmit({
       name: formData.name,
       location: formData.location,
-      startDateTime: startDateTime.toISOString(),
-      endDateTime: endDateTime.toISOString(),
+      startDateTime: formData.startDateTime.toISOString(),
+      endDateTime: formData.endDateTime.toISOString(),
       tvIds: formData.tvIds,
+      tags: formData.tags,
     });
 
     onOpenChange(false);
@@ -158,85 +169,42 @@ export function EventFormDialog({
             />
           </div>
 
+          <div className="space-y-3">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Tag className="w-4 h-4 text-primary" />
+              Áreas Profissionais
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {PROFESSIONAL_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => handleTagToggle(tag)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    formData.tags.includes(tag)
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <IconCalendar className="w-4 h-4 text-primary" />
-                  Data Início
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left">
-                      {formData.startDate
-                        ? format(new Date(`${formData.startDate}T00:00:00`), 'dd/MM/yyyy')
-                        : 'Selecione a data'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent>
-                    <Calendar
-                      mode="single"
-                      selected={formData.startDate ? new Date(`${formData.startDate}T00:00:00`) : undefined}
-                      onSelect={(date: Date | undefined) => {
-                        if (date) setFormData((prev) => ({ ...prev, startDate: format(date, 'yyyy-MM-dd') }));
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  Horário Início
-                </Label>
-                <Input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
-                  className="bg-input/50 border-border/50 focus:border-primary"
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <IconCalendar className="w-4 h-4 text-secondary" />
-                  Data Término
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left">
-                      {formData.endDate
-                        ? format(new Date(`${formData.endDate}T00:00:00`), 'dd/MM/yyyy')
-                        : 'Selecione a data'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent>
-                    <Calendar
-                      mode="single"
-                      selected={formData.endDate ? new Date(`${formData.endDate}T00:00:00`) : undefined}
-                      onSelect={(date: Date | undefined) => {
-                        if (date) setFormData((prev) => ({ ...prev, endDate: format(date, 'yyyy-MM-dd') }));
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-secondary" />
-                  Horário Término
-                </Label>
-                <Input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
-                  className="bg-input/50 border-border/50 focus:border-primary"
-                  required
-                />
-              </div>
-            </div>
+            <DateTimePicker
+              value={formData.startDateTime}
+              onChange={(date) => setFormData((prev) => ({ ...prev, startDateTime: date }))}
+              label="Início"
+              showPast={!!editingEvent}
+            />
+            <DateTimePicker
+              value={formData.endDateTime}
+              onChange={(date) => setFormData((prev) => ({ ...prev, endDateTime: date }))}
+              label="Término"
+              showPast={!!editingEvent}
+            />
           </div>
 
           {/* TV Selection with Chips */}

@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, startOfWeek, addDays, getDay } from "date-fns"
+import { format, startOfWeek, endOfWeek, addDays, getDay, isWithinInterval } from "date-fns"
 import { Clock, MapPin } from "lucide-react"
 
 interface AgendaGridProps {
@@ -40,17 +40,29 @@ export function AgendaGrid({
   }, [])
 
   const grouped = useMemo(() => {
+    const now = new Date()
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 })
+    const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+    
     const map = new Map<number, Event[]>()
     weekDays.forEach((wd) => {
       map.set(wd.dayOfWeek, [])
     })
-    events.forEach((event) => {
-      const start = new Date(event.startDateTime)
-      const eventDay = getDay(start)
-      if (map.has(eventDay)) {
-        map.get(eventDay)!.push(event)
-      }
-    })
+    
+    // Filtrar apenas eventos da semana atual
+    events
+      .filter((event) => {
+        const start = new Date(event.startDateTime)
+        return isWithinInterval(start, { start: weekStart, end: weekEnd })
+      })
+      .forEach((event) => {
+        const start = new Date(event.startDateTime)
+        const eventDay = getDay(start)
+        if (map.has(eventDay)) {
+          map.get(eventDay)!.push(event)
+        }
+      })
+    
     map.forEach((dayEvents) => {
       dayEvents.sort(
         (a, b) =>
@@ -142,9 +154,21 @@ export function AgendaGrid({
                       </span>
                     </div>
                     {e.location && (
-                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
                         <MapPin className="w-4 h-4 text-[#F5A623] flex-shrink-0" />
                         <span>{e.location}</span>
+                      </div>
+                    )}
+                    {e.tags && e.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {e.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>

@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
+import AnalyticsDashboard from "./pages/admin/Analytics";
 import TVsManagement from "./pages/admin/TVsManagement";
 import EventsManagement from "./pages/admin/EventsManagement";
 import TVPlayer from "./pages/TVPlayer";
@@ -31,6 +32,7 @@ const App = () => (
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="tvs" element={<TVsManagement />} />
             <Route path="events" element={<EventsManagement />} />
           </Route>
