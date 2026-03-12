@@ -25,19 +25,22 @@ export function AgendaGrid({
   orientation,
   currentDayOfWeek,
 }: AgendaGridProps) {
-  const weekDays = useMemo(() => {
-    const now = new Date()
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 })
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = addDays(weekStart, i)
-      return {
-        date: day,
-        dayOfWeek: getDay(day),
-        label: WEEKDAYS_PT[getDay(day)].label,
-        dateLabel: format(day, "dd/MM"),
-      }
-    })
-  }, [])
+ const weekDays = useMemo(() => {
+  const now = new Date()
+  const weekStart = startOfWeek(now, { weekStartsOn: 0 })
+  const allDays = Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(weekStart, i)
+    return {
+      date: day,
+      dayOfWeek: getDay(day),
+      label: WEEKDAYS_PT[getDay(day)].label,
+      dateLabel: format(day, "dd/MM"),
+    }
+  })
+  // Reordena: hoje primeiro, depois os próximos dias da semana
+  const todayIndex = allDays.findIndex(d => d.dayOfWeek === currentDayOfWeek)
+  return [...allDays.slice(todayIndex), ...allDays.slice(0, todayIndex)]
+}, [currentDayOfWeek])
 
   const grouped = useMemo(() => {
     const now = new Date()
