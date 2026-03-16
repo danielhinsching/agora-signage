@@ -35,7 +35,7 @@ export function EventCard({ event, compact, isToday }: EventCardProps) {
         )}
       </div>
       <div className={cn("text-muted-foreground mt-2 flex items-center gap-1.5", compact ? "text-sm" : "text-base")}>
-        📍 {event.location}
+       📍  {event.location}
       </div>
       <div className={cn("text-muted-foreground flex items-center gap-1.5 mt-1", compact ? "text-sm" : "text-base")}>
         🕐 {format(start, 'HH:mm')} – {format(end, 'HH:mm')}
