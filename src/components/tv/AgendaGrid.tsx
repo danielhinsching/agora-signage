@@ -26,7 +26,7 @@ const CAROUSEL_INTERVAL = 5000
 // ─── Shared Event Card ───────────────────────────────────────────────
 function EventItem({ event }: { event: Event }) {
   return (
-    <div className="border-b border-[#E6A020]/30 px-4 py-3 border-l-4 border-l-[#F5A623] flex flex-col justify-center overflow-hidden">
+    <div className="border-b border-[#E6A020]/30 px-4 py-3 flex flex-col justify-center overflow-hidden">
       <p className="font-bold text-gray-900 text-sm leading-snug mb-1 truncate">
         {event.name}
       </p>

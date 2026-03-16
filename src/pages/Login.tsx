@@ -67,7 +67,7 @@ const Login = () => {
           <img
             src="/logotext.png"
             alt="Ágora Tech Park"
-            className="mx-auto mb-6 object-contain"
+            className="mx-auto mb-6 object-contain dark:brightness-0 dark:invert"
           />
           
         </div>
