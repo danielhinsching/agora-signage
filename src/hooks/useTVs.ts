@@ -61,16 +61,6 @@ export function useTVs() {
     return tvs.find((tv) => tv.slug === slug);
   }, [tvs]);
 
-  const setActiveImage = useCallback(async (id: string, image: string | undefined) => {
-    try {
-      await dbUpdateTV(id, { activeImage: image });
-    } catch (error) {
-      console.error('Error updating active image:', error);
-      toast.error('Erro ao atualizar imagem');
-      throw error;
-    }
-  }, []);
-
   const isSlugUnique = useCallback((slug: string, excludeId?: string) => {
     return !tvs.some((tv) => tv.slug === slug && tv.id !== excludeId);
   }, [tvs]);
