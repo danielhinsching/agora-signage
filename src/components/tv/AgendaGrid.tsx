@@ -1,8 +1,9 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
 import { format, startOfWeek, endOfWeek, addDays, getDay, isWithinInterval } from "date-fns"
 import { Clock, MapPin } from "lucide-react"
+
 
 interface AgendaGridProps {
   events: Event[]
@@ -32,9 +33,29 @@ function DayColumn({
   dayEvents: Event[]
   isToday: boolean
 }) {
+  const columnRef = useRef<HTMLDivElement>(null)
+  const [eventsPerPage, setEventsPerPage] = useState(4)
   const [page, setPage] = useState(0)
   const [animating, setAnimating] = useState(false)
-  const totalPages = Math.ceil(dayEvents.length / EVENTS_PER_PAGE)
+
+  // Calcula quantos eventos cabem baseado na altura disponível
+  useEffect(() => {
+    const calculate = () => {
+      if (!columnRef.current) return
+      const columnHeight = columnRef.current.clientHeight
+      const MIN_CARD_HEIGHT = 110 // altura mínima de cada card em px
+      const calculated = Math.max(1, Math.floor(columnHeight / MIN_CARD_HEIGHT))
+      setEventsPerPage(calculated)
+      setPage(0) // reset página ao redimensionar
+    }
+
+    calculate()
+    const observer = new ResizeObserver(calculate)
+    if (columnRef.current) observer.observe(columnRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  const totalPages = Math.ceil(dayEvents.length / eventsPerPage)
 
   useEffect(() => {
     if (totalPages <= 1) return
@@ -49,9 +70,14 @@ function DayColumn({
   }, [totalPages])
 
   const visibleEvents = dayEvents.slice(
-    page * EVENTS_PER_PAGE,
-    page * EVENTS_PER_PAGE + EVENTS_PER_PAGE
+    page * eventsPerPage,
+    page * eventsPerPage + eventsPerPage
   )
+
+  const slots = [
+    ...visibleEvents,
+    ...Array(eventsPerPage - visibleEvents.length).fill(null),
+  ]
 
   return (
     <div
@@ -73,42 +99,46 @@ function DayColumn({
       </div>
 
       {/* Events list */}
-      <div className="flex-1 bg-white flex flex-col overflow-hidden relative">
+      <div
+        ref={columnRef}
+        className="flex-1 bg-white flex flex-col overflow-hidden relative"
+      >
         <div
-          className={cn(
-            "flex flex-col transition-all duration-400",
-            animating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
-          )}
-          style={{ transition: "opacity 0.4s ease, transform 0.4s ease" }}
+          className={cn("flex flex-col h-full")}
+          style={{
+            opacity: animating ? 0 : 1,
+            transform: animating ? "translateY(6px)" : "translateY(0)",
+            transition: "opacity 0.4s ease, transform 0.4s ease",
+          }}
         >
-          {visibleEvents.length > 0 ? (
-            visibleEvents.map((e) => (
+          {slots.map((e, i) =>
+            e ? (
               <div
                 key={e.id}
-                className="border-b border-[#E6A020]/30 px-4 py-4 hover:bg-[#FBC57D]/10 transition-colors border-l-4 border-l-[#F5A623]"
+                className="flex-1 border-b border-[#E6A020]/30 px-4 py-3 border-l-4 border-l-[#F5A623] flex flex-col justify-center overflow-hidden"
               >
-                <p className="font-bold text-gray-900 text-base leading-snug mb-2">
+                <p className="font-bold text-gray-900 text-sm leading-snug mb-1 truncate">
                   {e.name}
                 </p>
-                <div className="flex items-center gap-2 text-gray-700 text-sm mb-2">
-                  <Clock className="w-4 h-4 text-[#F5A623] flex-shrink-0" />
+                <div className="flex items-center gap-1 text-gray-700 text-xs mb-1">
+                  <Clock className="w-3 h-3 text-[#F5A623] flex-shrink-0" />
                   <span className="font-medium">
                     {format(new Date(e.startDateTime), "HH:mm")} até{" "}
                     {format(new Date(e.endDateTime), "HH:mm")}
                   </span>
                 </div>
                 {e.location && (
-                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
-                    <MapPin className="w-4 h-4 text-[#F5A623] flex-shrink-0" />
-                    <span>{e.location}</span>
+                  <div className="flex items-center gap-1 text-gray-600 text-xs mb-1">
+                    <MapPin className="w-3 h-3 text-[#F5A623] flex-shrink-0" />
+                    <span className="truncate">{e.location}</span>
                   </div>
                 )}
                 {e.tags && e.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {e.tags.map((tag) => (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {e.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
+                        className="px-1.5 py-0.5 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
                       >
                         {tag}
                       </span>
@@ -116,11 +146,12 @@ function DayColumn({
                   </div>
                 )}
               </div>
-            ))
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <p className="text-gray-300 text-xs">-</p>
-            </div>
+            ) : (
+              <div
+                key={`empty-${i}`}
+                className="flex-1 border-b border-[#E6A020]/10 bg-white"
+              />
+            )
           )}
         </div>
 

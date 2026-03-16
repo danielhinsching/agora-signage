@@ -1,25 +1,25 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Event, TV, PROFESSIONAL_TAGS } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect, useMemo } from "react";
+import { Event, TV, PROFESSIONAL_TAGS } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Tv, X, Plus, CheckSquare, Tag } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
-import { DateTimePicker } from './DateTimePicker';
+} from "@/components/ui/dialog";
+import { Tv, X, Plus, CheckSquare, Tag } from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { DateTimePicker } from "./DateTimePicker";
 
 interface EventFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingEvent: Event | null;
   tvs: TV[];
-  onSubmit: (eventData: Omit<Event, 'id' | 'createdAt'>) => void;
+  onSubmit: (eventData: Omit<Event, "id" | "createdAt">) => void;
   /** Pre-fill date when creating from calendar click */
   defaultDate?: Date;
 }
@@ -33,8 +33,8 @@ export function EventFormDialog({
   defaultDate,
 }: EventFormDialogProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    location: '',
+    name: "",
+    location: "",
     startDateTime: undefined as Date | undefined,
     endDateTime: undefined as Date | undefined,
     tvIds: [] as string[],
@@ -57,13 +57,13 @@ export function EventFormDialog({
     } else {
       const startDate = defaultDate ? new Date(defaultDate) : new Date();
       startDate.setHours(9, 0, 0, 0);
-      
+
       const endDate = new Date(startDate);
       endDate.setHours(10, 0, 0, 0);
-      
+
       setFormData({
-        name: '',
-        location: '',
+        name: "",
+        location: "",
         startDateTime: startDate,
         endDateTime: endDate,
         tvIds: [],
@@ -97,24 +97,27 @@ export function EventFormDialog({
   };
 
   const handleTagToggle = (tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter((t) => t !== tag)
-        : [...prev.tags, tag],
-    }));
+    setFormData((prev) => {
+      if (!prev.tags.includes(tag) && prev.tags.length >= 3) return prev;
+      return {
+        ...prev,
+        tags: prev.tags.includes(tag)
+          ? prev.tags.filter((t) => t !== tag)
+          : [...prev.tags, tag],
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.startDateTime || !formData.endDateTime) {
-      toast.error('Selecione a data e hora de início e término.');
+      toast.error("Selecione a data e hora de início e término.");
       return;
     }
 
     if (formData.endDateTime <= formData.startDateTime) {
-      toast.error('A data/hora de término deve ser posterior ao início.');
+      toast.error("A data/hora de término deve ser posterior ao início.");
       return;
     }
 
@@ -143,7 +146,7 @@ export function EventFormDialog({
       <DialogContent className="glass-card-strong border-border max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {editingEvent ? 'Editar Evento' : 'Novo Evento'}
+            {editingEvent ? "Editar Evento" : "Novo Evento"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -151,7 +154,9 @@ export function EventFormDialog({
             <Label className="text-sm font-medium">Nome do Evento</Label>
             <Input
               value={formData.name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Ex: Workshop de Inovação"
               className="bg-input/50 border-border/50 focus:border-primary"
               required
@@ -162,7 +167,9 @@ export function EventFormDialog({
             <Label className="text-sm font-medium">Local</Label>
             <Input
               value={formData.location}
-              onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, location: e.target.value }))
+              }
               placeholder="Ex: Auditório Principal"
               className="bg-input/50 border-border/50 focus:border-primary"
               required
@@ -173,35 +180,56 @@ export function EventFormDialog({
             <Label className="text-sm font-medium flex items-center gap-2">
               <Tag className="w-4 h-4 text-primary" />
               Áreas Profissionais
+              <span
+                className={`text-xs font-normal ml-auto ${formData.tags.length >= 3 ? "text-destructive font-semibold" : "text-muted-foreground"}`}
+              >
+                {formData.tags.length}/3 selecionadas
+              </span>
             </Label>
             <div className="flex flex-wrap gap-2">
-              {PROFESSIONAL_TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => handleTagToggle(tag)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    formData.tags.includes(tag)
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
+              {PROFESSIONAL_TAGS.map((tag) => {
+                const isSelected = formData.tags.includes(tag);
+                const isDisabled = !isSelected && formData.tags.length >= 3;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleTagToggle(tag)}
+                    disabled={isDisabled}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : isDisabled
+                          ? "bg-muted/40 text-muted-foreground/40 cursor-not-allowed opacity-40"
+                          : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
             </div>
+            {formData.tags.length >= 3 && (
+              <p className="text-xs text-destructive">
+                Limite de 3 tags atingido. Remova uma para selecionar outra.
+              </p>
+            )}
           </div>
 
           <div className="space-y-4">
             <DateTimePicker
               value={formData.startDateTime}
-              onChange={(date) => setFormData((prev) => ({ ...prev, startDateTime: date }))}
+              onChange={(date) =>
+                setFormData((prev) => ({ ...prev, startDateTime: date }))
+              }
               label="Início"
               showPast={!!editingEvent}
             />
             <DateTimePicker
               value={formData.endDateTime}
-              onChange={(date) => setFormData((prev) => ({ ...prev, endDateTime: date }))}
+              onChange={(date) =>
+                setFormData((prev) => ({ ...prev, endDateTime: date }))
+              }
               label="Término"
               showPast={!!editingEvent}
             />
@@ -223,7 +251,9 @@ export function EventFormDialog({
                   className="text-xs text-primary hover:text-primary/80"
                 >
                   <CheckSquare className="w-3 h-3 mr-1" />
-                  {formData.tvIds.length === tvs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                  {formData.tvIds.length === tvs.length
+                    ? "Desmarcar Todas"
+                    : "Selecionar Todas"}
                 </Button>
               )}
             </div>
@@ -252,7 +282,9 @@ export function EventFormDialog({
 
                 {unselectedTVs.length > 0 && (
                   <div className="flex flex-wrap gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                    <span className="text-xs text-muted-foreground w-full mb-1">Clique para adicionar:</span>
+                    <span className="text-xs text-muted-foreground w-full mb-1">
+                      Clique para adicionar:
+                    </span>
                     {unselectedTVs.map((tv) => (
                       <span
                         key={tv.id}
@@ -270,11 +302,19 @@ export function EventFormDialog({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-              {editingEvent ? 'Salvar Alterações' : 'Cadastrar Evento'}
+            <Button
+              type="submit"
+              className="flex-1 bg-primary hover:bg-primary/90"
+            >
+              {editingEvent ? "Salvar Alterações" : "Cadastrar Evento"}
             </Button>
           </div>
         </form>
