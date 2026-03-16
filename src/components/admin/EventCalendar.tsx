@@ -33,23 +33,15 @@ import {
 import { ptBR } from 'date-fns/locale';
 
 // Event color palette for visual distinction
-const eventColors = [
-  { bg: 'bg-primary/20', border: 'border-l-primary', text: 'text-primary', dot: 'bg-primary' },
-  { bg: 'bg-secondary/20', border: 'border-l-secondary', text: 'text-secondary', dot: 'bg-secondary' },
-  { bg: 'bg-accent/20', border: 'border-l-accent', text: 'text-accent', dot: 'bg-accent' },
-  { bg: 'bg-purple-500/20', border: 'border-l-purple-500', text: 'text-purple-400', dot: 'bg-purple-500' },
-  { bg: 'bg-amber-500/20', border: 'border-l-amber-500', text: 'text-amber-400', dot: 'bg-amber-500' },
-  { bg: 'bg-rose-500/20', border: 'border-l-rose-500', text: 'text-rose-400', dot: 'bg-rose-500' },
-  { bg: 'bg-emerald-500/20', border: 'border-l-emerald-500', text: 'text-emerald-400', dot: 'bg-emerald-500' },
-  { bg: 'bg-sky-500/20', border: 'border-l-sky-500', text: 'text-sky-400', dot: 'bg-sky-500' },
-];
+const eventColor = {
+  bg: 'bg-[#F5A623]/10',
+  border: 'border-l-[#F5A623]/30',
+  text: 'text-foreground',
+  dot: 'bg-[#F5A623]',
+};
 
-function getEventColor(eventId: string) {
-  let hash = 0;
-  for (let i = 0; i < eventId.length; i++) {
-    hash = eventId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return eventColors[Math.abs(hash) % eventColors.length];
+function getEventColor(_eventId: string) {
+  return eventColor;
 }
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
