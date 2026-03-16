@@ -113,7 +113,7 @@ const EventsManagement = () => {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Carregando eventos...</p>
@@ -123,29 +123,29 @@ const EventsManagement = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 md:p-6 lg:p-8 pt-16 lg:pt-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Gestão de Eventos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Gestão de Eventos</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Cadastre e gerencie os eventos da agenda
           </p>
         </div>
-        <Button onClick={() => handleOpenCreate()} className="bg-primary hover:bg-primary/90 glow-effect">
+        <Button onClick={() => handleOpenCreate()} className="bg-primary hover:bg-primary/90 glow-effect w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Novo Evento
         </Button>
       </div>
 
-      <Tabs defaultValue="calendar" className="space-y-6">
-        <TabsList className="bg-muted/50 border border-border/30">
-          <TabsTrigger value="calendar" className="flex items-center gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+      <Tabs defaultValue="calendar" className="space-y-4 md:space-y-6">
+        <TabsList className="bg-muted/50 border border-border/30 w-full sm:w-auto">
+          <TabsTrigger value="calendar" className="flex-1 sm:flex-none flex items-center gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <CalendarDays className="w-4 h-4" />
-            Agenda
+            <span className="hidden sm:inline">Agenda</span>
           </TabsTrigger>
-          <TabsTrigger value="table" className="flex items-center gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+          <TabsTrigger value="table" className="flex-1 sm:flex-none flex items-center gap-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <List className="w-4 h-4" />
-            Lista
+            <span className="hidden sm:inline">Lista</span>
           </TabsTrigger>
         </TabsList>
 
@@ -164,12 +164,12 @@ const EventsManagement = () => {
         <TabsContent value="table" className="mt-0">
           {events.length === 0 ? (
             <Card className="glass-card">
-              <CardContent className="flex flex-col items-center justify-center py-20">
-                <div className="w-20 h-20 rounded-2xl bg-secondary/10 flex items-center justify-center mb-6">
-                  <Calendar className="w-10 h-10 text-secondary" />
+              <CardContent className="flex flex-col items-center justify-center py-12 md:py-20 px-4">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-secondary/10 flex items-center justify-center mb-4 md:mb-6">
+                  <Calendar className="w-8 h-8 md:w-10 md:h-10 text-secondary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Nenhum evento cadastrado</h3>
-                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                <h3 className="text-lg md:text-xl font-semibold mb-2">Nenhum evento cadastrado</h3>
+                <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 text-center max-w-md">
                   Comece cadastrando um evento para exibir na agenda das TVs do parque
                 </p>
                 <Button onClick={() => handleOpenCreate()} className="bg-primary hover:bg-primary/90 glow-effect">
@@ -179,15 +179,15 @@ const EventsManagement = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="glass-card overflow-hidden">
+            <div className="glass-card overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border/50 hover:bg-transparent">
                     <TableHead className="text-muted-foreground font-semibold">Evento</TableHead>
-                    <TableHead className="text-muted-foreground font-semibold">Local</TableHead>
-                    <TableHead className="text-muted-foreground font-semibold">Data</TableHead>
-                    <TableHead className="text-muted-foreground font-semibold">Horário</TableHead>
-                    <TableHead className="text-muted-foreground font-semibold">TVs</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold hidden sm:table-cell">Local</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold hidden md:table-cell">Data</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold hidden lg:table-cell">Horário</TableHead>
+                    <TableHead className="text-muted-foreground font-semibold hidden lg:table-cell">TVs</TableHead>
                     <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
                     <TableHead className="text-muted-foreground font-semibold text-right">Ações</TableHead>
                   </TableRow>
@@ -205,20 +205,25 @@ const EventsManagement = () => {
                         className="border-border/30 hover:bg-muted/30 fade-in-up"
                         style={{ animationDelay: `${index * 0.05}s` }}
                       >
-                        <TableCell className="font-medium">{event.name}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium">
+                          <div>
+                            <p className="truncate max-w-[200px]">{event.name}</p>
+                            <p className="text-xs text-muted-foreground sm:hidden">{event.location}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <span className={`badge-location border ${getLocationColor(event.location)}`}>
                             <MapPin className="w-3 h-3" />
                             {event.location}
                           </span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-muted-foreground hidden md:table-cell">
                           {format(startDT, "dd MMM yyyy", { locale: ptBR })}
                         </TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-sm">
+                        <TableCell className="text-muted-foreground font-mono text-sm hidden lg:table-cell">
                           {format(startDT, 'HH:mm')} - {format(endDT, 'HH:mm')}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {eventTVs.length === 0 ? (
                               <span className="text-xs text-muted-foreground">Nenhuma</span>
@@ -236,7 +241,7 @@ const EventsManagement = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${status.class}`}>
+                          <span className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-full font-medium ${status.class}`}>
                             {status.label}
                           </span>
                         </TableCell>
@@ -270,7 +275,7 @@ const EventsManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Event Form Dialog (shared by both views) */}
+      {/* Event Form Dialog */}
       <EventFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
@@ -282,7 +287,7 @@ const EventsManagement = () => {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent className="glass-card-strong border-border">
+        <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
