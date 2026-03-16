@@ -72,7 +72,6 @@ export function useTVs() {
     updateTV,
     deleteTV,
     getTVBySlug,
-    setActiveImage,
     isSlugUnique,
   };
 }

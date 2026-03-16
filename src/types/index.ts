@@ -7,7 +7,6 @@ export interface TV {
   name: string;
   slug: string;
   orientation: TVOrientation;
-  activeImage?: string; // Base64 encoded image
   createdAt: string;
 }
 

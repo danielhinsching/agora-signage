@@ -156,7 +156,6 @@ function convertDocToTV(id: string, data: DocumentData): TV {
     name: data.name,
     slug: data.slug,
     orientation: data.orientation,
-    activeImage: data.activeImage,
     createdAt: convertTimestamp(data.createdAt),
   };
 }
