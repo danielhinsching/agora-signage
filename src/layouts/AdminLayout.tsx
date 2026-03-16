@@ -112,8 +112,8 @@ const AdminLayout = () => {
                   {user?.username.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
-                <p className="font-medium text-sm">{user?.username}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-sm truncate max-w-[140px]">{user?.username}</p>
                 <p className="text-xs text-muted-foreground">Administrador</p>
               </div>
             </div>

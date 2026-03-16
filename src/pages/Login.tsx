@@ -133,16 +133,6 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-border/30">
-            <div className="glass-card p-4 rounded-xl">
-              <p className="text-xs text-muted-foreground text-center mb-2">
-                Para acessar, configure um usuário no Firebase Authentication
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                Consulte o README para instruções
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
