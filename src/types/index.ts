@@ -1,6 +1,6 @@
 // Ágora LineUp Types
 
-export type TVOrientation = 'horizontal' | 'vertical';
+export type TVOrientation = 'horizontal' | 'vertical' | 'vertical-left' | 'vertical-right';
 
 export interface TV {
   id: string;

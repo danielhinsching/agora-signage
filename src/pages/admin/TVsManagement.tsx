@@ -1,24 +1,24 @@
-import { useState } from 'react';
-import { useTVs } from '@/hooks/useTVs';
-import { TV, TVOrientation } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState } from "react";
+import { useTVs } from "@/hooks/useTVs";
+import { TV, TVOrientation } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,24 +28,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Tv, Plus, Trash2, Edit, ExternalLink, Monitor, Smartphone, Menu } from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/ui/alert-dialog";
+import {
+  Tv,
+  Plus,
+  Trash2,
+  Edit,
+  ExternalLink,
+  Monitor,
+  Smartphone,
+} from "lucide-react";
+import { toast } from "sonner";
 
 const TVsManagement = () => {
   const { tvs, loading, addTV, updateTV, deleteTV, isSlugUnique } = useTVs();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTV, setEditingTV] = useState<TV | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    orientation: 'horizontal' as TVOrientation,
+    name: "",
+    slug: "",
+    orientation: "horizontal" as TVOrientation,
   });
 
   const resetForm = () => {
-    setFormData({ name: '', slug: '', orientation: 'horizontal' });
+    setFormData({ name: "", slug: "", orientation: "horizontal" });
     setEditingTV(null);
   };
 
@@ -66,10 +74,10 @@ const TVsManagement = () => {
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   };
 
   const handleNameChange = (name: string) => {
@@ -82,9 +90,9 @@ const TVsManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isSlugUnique(formData.slug, editingTV?.id)) {
-      toast.error('Este slug já está em uso. Escolha outro.');
+      toast.error("Este slug já está em uso. Escolha outro.");
       return;
     }
 
@@ -97,7 +105,7 @@ const TVsManagement = () => {
       setIsDialogOpen(false);
       resetForm();
     } catch (error) {
-      console.error('Error saving TV:', error);
+      console.error("Error saving TV:", error);
     }
   };
 
@@ -106,7 +114,7 @@ const TVsManagement = () => {
       await deleteTV(id);
       setDeleteConfirm(null);
     } catch (error) {
-      console.error('Error deleting TV:', error);
+      console.error("Error deleting TV:", error);
     }
   };
 
@@ -135,14 +143,19 @@ const TVsManagement = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-primary/90 glow-effect w-full sm:w-auto">
+            <Button
+              onClick={() => handleOpenDialog()}
+              className="bg-primary hover:bg-primary/90 glow-effect w-full sm:w-auto"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Nova TV
             </Button>
           </DialogTrigger>
           <DialogContent className="glass-card-strong border-border mx-4 sm:mx-auto max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-xl">{editingTV ? 'Editar TV' : 'Nova TV'}</DialogTitle>
+              <DialogTitle className="text-xl">
+                {editingTV ? "Editar TV" : "Nova TV"}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
@@ -158,10 +171,14 @@ const TVsManagement = () => {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Slug (URL)</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-sm font-mono">/tv/</span>
+                  <span className="text-muted-foreground text-sm font-mono">
+                    /tv/
+                  </span>
                   <Input
                     value={formData.slug}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                    }
                     placeholder="bloco-a-recepcao"
                     className="bg-input/50 border-border/50 focus:border-primary font-mono"
                     required
@@ -192,15 +209,35 @@ const TVsManagement = () => {
                         Vertical (9:16)
                       </div>
                     </SelectItem>
+                    <SelectItem value="vertical-left">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 rotate-90" />
+                        Vertical — Girada Esquerda
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vertical-right">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 -rotate-90" />
+                        Vertical — Girada Direita
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="flex-1"
+                >
                   Cancelar
                 </Button>
-                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                  {editingTV ? 'Salvar Alterações' : 'Cadastrar TV'}
+                <Button
+                  type="submit"
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                >
+                  {editingTV ? "Salvar Alterações" : "Cadastrar TV"}
                 </Button>
               </div>
             </form>
@@ -214,11 +251,16 @@ const TVsManagement = () => {
             <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 md:mb-6">
               <Tv className="w-8 h-8 md:w-10 md:h-10 text-primary" />
             </div>
-            <h3 className="text-lg md:text-xl font-semibold mb-2">Nenhuma TV cadastrada</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-2">
+              Nenhuma TV cadastrada
+            </h3>
             <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 text-center max-w-md">
               Comece cadastrando uma TV para exibir conteúdo nas telas do parque
             </p>
-            <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-primary/90 glow-effect">
+            <Button
+              onClick={() => handleOpenDialog()}
+              className="bg-primary hover:bg-primary/90 glow-effect"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Cadastrar Primeira TV
             </Button>
@@ -234,7 +276,7 @@ const TVsManagement = () => {
             >
               {/* Status indicator bar */}
               <div className="h-1 bg-gradient-to-r from-accent to-primary" />
-              
+
               <CardContent className="p-4 md:p-5 space-y-4">
                 {/* Header */}
                 <div className="flex items-start justify-between">
@@ -247,12 +289,23 @@ const TVsManagement = () => {
                       <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent border-2 border-card animate-pulse" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-base md:text-lg truncate">{tv.name}</h3>
-                      <p className="text-xs text-muted-foreground font-mono truncate">/tv/{tv.slug}</p>
+                      <h3 className="font-semibold text-base md:text-lg truncate">
+                        {tv.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        /tv/{tv.slug}
+                      </p>
                     </div>
                   </div>
                   <span className="chip chip-secondary text-xs py-0.5 flex-shrink-0">
-                    {tv.orientation === 'horizontal' ? '16:9' : '9:16'}
+                    {
+                      {
+                        horizontal: "16:9",
+                        vertical: "9:16",
+                        "vertical-left": "9:16 ↺",
+                        "vertical-right": "9:16 ↻",
+                      }[tv.orientation]
+                    }
                   </span>
                 </div>
 
@@ -273,7 +326,11 @@ const TVsManagement = () => {
                     className="flex-1 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30 text-xs sm:text-sm"
                     asChild
                   >
-                    <a href={`/tv/${tv.slug}`} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={`/tv/${tv.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <ExternalLink className="w-4 h-4 mr-1" />
                       Visualizar
                     </a>
@@ -294,12 +351,16 @@ const TVsManagement = () => {
       )}
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+      <AlertDialog
+        open={!!deleteConfirm}
+        onOpenChange={() => setDeleteConfirm(null)}
+      >
         <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta TV? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir esta TV? Esta ação não pode ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

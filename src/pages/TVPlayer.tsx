@@ -37,7 +37,6 @@ export default function TvPlayer() {
   // Subscribe to events for this TV in real-time
   useEffect(() => {
     if (!tv) return;
-
     const unsubscribe = subscribeEventsForTV(tv.id, (updatedEvents) => {
       const now = new Date();
       const filteredEvents = updatedEvents.filter((event) => {
@@ -49,20 +48,17 @@ export default function TvPlayer() {
       setEvents(filteredEvents);
       setFadeKey((k) => k + 1);
     });
-
     return () => unsubscribe();
   }, [tv]);
 
-  // Force light theme (white) on TV pages and restore previous theme on unmount
+  // Force light theme on TV pages and restore on unmount
   useEffect(() => {
     const root = document.documentElement;
     const hadDark = root.classList.contains('dark');
     const hadLight = root.classList.contains('light');
     const prevTheme = hadDark ? 'dark' : hadLight ? 'light' : null;
-
     root.classList.remove('dark');
     root.classList.add('light');
-
     return () => {
       root.classList.remove('light');
       if (prevTheme === 'dark') root.classList.add('dark');
@@ -91,19 +87,43 @@ export default function TvPlayer() {
           <p className="text-muted-foreground text-lg">
             TV não encontrada: <span className="font-mono text-foreground">{slug}</span>
           </p>
-          <p className="text-muted-foreground text-sm">Cadastre esta TV no painel administrativo.</p>
+          <p className="text-muted-foreground text-sm">
+            Cadastre esta TV no painel administrativo.
+          </p>
         </div>
       </div>
     );
   }
 
+  const isRotated =
+    effectOrientation === 'vertical-left' || effectOrientation === 'vertical-right'
+  const gridOrientation = isRotated ? 'vertical' : effectOrientation
+
+  const rotateStyle = isRotated
+    ? {
+        transform:
+          effectOrientation === 'vertical-left' ? 'rotate(-90deg)' : 'rotate(90deg)',
+        width: '100vh',
+        height: '100vw',
+        position: 'absolute' as const,
+        top: '50%',
+        left: '50%',
+        marginTop: '-50vw',
+        marginLeft: '-50vh',
+      }
+    : {}
+
   return (
-    <div className="h-screen w-screen overflow-hidden cursor-none bg-background flex flex-col select-none">
-      <div key={fadeKey} className="flex flex-col h-full animate-fade-in">
-        <TvHeader orientation={effectOrientation} />
+    <div className="h-screen w-screen overflow-hidden cursor-none bg-background select-none relative">
+      <div
+        key={fadeKey}
+        className="flex flex-col animate-fade-in"
+        style={isRotated ? rotateStyle : { height: '100vh' }}
+      >
+        <TvHeader orientation={gridOrientation} />
         <AgendaGrid
           events={events}
-          orientation={effectOrientation}
+          orientation={gridOrientation}
           currentDayOfWeek={dayOfWeek}
         />
         <TvFooter />
