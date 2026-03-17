@@ -1,4 +1,6 @@
 import { useClock } from '@/hooks/use-clock.ts';
+import { Maximize, Minimize } from 'lucide-react';
+import { useState } from 'react';
 
 interface TvHeaderProps {
   orientation: 'horizontal' | 'vertical';
@@ -6,31 +8,39 @@ interface TvHeaderProps {
 
 export function TvHeader({ orientation }: TvHeaderProps) {
   const { time, date } = useClock();
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  if (orientation === 'vertical') {
-    return (
-      <header className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 bg-card/60 backdrop-blur-md border-b border-border/50">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <img src="/icon.png" alt="Ágora" className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-contain" />
-          <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-foreground">ÁGORA TECH PARK</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="text-lg sm:text-xl lg:text-2xl font-light tabular-nums text-foreground">{time}</div>
-          <div className="text-xs capitalize text-muted-foreground hidden sm:block">{date}</div>
-        </div>
-      </header>
-    );
-  }
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
 
   return (
-    <header className="flex items-center justify-between px-3 sm:px-6 lg:px-8 py-2 sm:py-3 bg-card/60 backdrop-blur-md border-b border-border/50">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <img src="/icon.png" alt="Ágora" className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-contain" />
-        <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-foreground">ÁGORA TECH PARK</span>
-      </div>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <div className="text-xs capitalize text-muted-foreground hidden sm:block">{date}</div>
-        <div className="text-lg sm:text-xl lg:text-2xl font-light tabular-nums text-foreground">{time}</div>
+    <header className="flex items-center justify-between px-6 py-4 bg-white border-b-4 border-[#F5A623] flex-shrink-0">
+      <img
+        src="/agora-tech.svg"
+        alt="Ágora Tech Park"
+        className="h-8 w-auto"
+      />
+      <div className="flex items-center gap-6">
+        <div className="text-sm capitalize text-gray-500">{date}</div>
+        <div className="text-2xl font-light tabular-nums text-gray-900">{time}</div>
+        <button
+          onClick={toggleFullscreen}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+          title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+        >
+          {isFullscreen ? (
+            <Minimize className="w-5 h-5" />
+          ) : (
+            <Maximize className="w-5 h-5" />
+          )}
+        </button>
       </div>
     </header>
   );
