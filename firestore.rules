@@ -19,6 +19,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuthenticated();
     }
+
+    // Coleção de Locais - leitura pública (para seleção), escrita apenas autenticada
+    match /locais/{localId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
     
     // Coleção de Usuários - apenas o próprio usuário pode ler/escrever
     match /users/{userId} {

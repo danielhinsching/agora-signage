@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Event, TV, PROFESSIONAL_TAGS } from "@/types";
+import { useLocais, formatLocalDisplay } from "@/hooks/useLocais";
+import { usePersistentForm } from "@/hooks/usePersistentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -16,20 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tv, X, Plus, CheckSquare, Tag, MapPin } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tv, X, Plus, CheckSquare, Tag, MapPin, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { DateTimePicker } from "./DateTimePicker";
-
-// Default rooms list
-const DEFAULT_ROOMS = [
-  "Auditório Principal - Bloco A",
-  "Sala 101 - Bloco A",
-  "Sala 102 - Bloco A",
-  "Sala 201 - Bloco B",
-  "Sala 202 - Bloco B",
-  "Coworking - Bloco C",
-  "Recepção - Bloco A",
-];
 
 interface EventFormDialogProps {
   open: boolean;
@@ -48,66 +50,124 @@ export function EventFormDialog({
   onSubmit,
   defaultDate,
 }: EventFormDialogProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    location: "",
-    startDateTime: undefined as Date | undefined,
-    endDateTime: undefined as Date | undefined,
-    tvIds: [] as string[],
-    tags: [] as string[],
+  const { locais, addLocal, isLocalUnique } = useLocais();
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  const [showNewLocalForm, setShowNewLocalForm] = useState(false);
+  const [newLocalData, setNewLocalData] = useState({
+    nome: "",
+    predio: "",
+    descricao: "",
   });
 
-  const [rooms, setRooms] = useState<string[]>(DEFAULT_ROOMS);
-  const [showNewRoom, setShowNewRoom] = useState(false);
-  const [newRoomName, setNewRoomName] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-
+  const initialFormData = useMemo(() => {
     if (editingEvent) {
-      setFormData({
+      return {
         name: editingEvent.name,
         location: editingEvent.location,
         startDateTime: new Date(editingEvent.startDateTime),
         endDateTime: new Date(editingEvent.endDateTime),
         tvIds: editingEvent.tvIds,
         tags: editingEvent.tags || [],
-      });
-      // Ensure existing location is in the rooms list
-      if (editingEvent.location && !rooms.includes(editingEvent.location)) {
-        setRooms((prev) => [...prev, editingEvent.location]);
-      }
-    } else {
-      const startDate = defaultDate ? new Date(defaultDate) : new Date();
-      startDate.setHours(9, 0, 0, 0);
-      const endDate = new Date(startDate);
-      endDate.setHours(10, 0, 0, 0);
-
-      setFormData({
-        name: "",
-        location: "",
-        startDateTime: startDate,
-        endDateTime: endDate,
-        tvIds: [],
-        tags: [],
-      });
+      };
     }
-    setShowNewRoom(false);
-    setNewRoomName("");
-  }, [open, editingEvent, defaultDate]);
 
-  const handleAddRoom = () => {
-    const trimmed = newRoomName.trim();
-    if (!trimmed) return;
-    if (rooms.includes(trimmed)) {
-      toast.error("Essa sala já existe.");
+    const startDate = defaultDate ? new Date(defaultDate) : new Date();
+    startDate.setHours(9, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setHours(10, 0, 0, 0);
+
+    return {
+      name: "",
+      location: "",
+      startDateTime: startDate,
+      endDateTime: endDate,
+      tvIds: [],
+      tags: [],
+    };
+  }, [editingEvent, defaultDate]);
+
+  const draftKey = editingEvent
+    ? `form_evento_draft_edit_${editingEvent.id}`
+    : "form_evento_draft_new";
+
+  const serializeEventDraft = useCallback((value: {
+    name: string;
+    location: string;
+    startDateTime: Date | undefined;
+    endDateTime: Date | undefined;
+    tvIds: string[];
+    tags: string[];
+  }) => ({
+    ...value,
+    startDateTime: value.startDateTime ? value.startDateTime.toISOString() : null,
+    endDateTime: value.endDateTime ? value.endDateTime.toISOString() : null,
+  }), []);
+
+  const deserializeEventDraft = useCallback((value: {
+    name: string;
+    location: string;
+    startDateTime: string | null;
+    endDateTime: string | null;
+    tvIds: string[];
+    tags: string[];
+  }) => ({
+    ...value,
+    startDateTime: value.startDateTime ? new Date(value.startDateTime) : undefined,
+    endDateTime: value.endDateTime ? new Date(value.endDateTime) : undefined,
+  }), []);
+
+  const { formData, setFormData, hasUnsavedChanges, clearDraft, discardChanges } = usePersistentForm({
+    storageKey: draftKey,
+    initialValue: initialFormData,
+    isOpen: open,
+    serialize: serializeEventDraft,
+    deserialize: deserializeEventDraft,
+  });
+
+  const closeDialog = () => {
+    onOpenChange(false);
+    setShowNewLocalForm(false);
+    setNewLocalData({ nome: "", predio: "", descricao: "" });
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      onOpenChange(true);
       return;
     }
-    setRooms((prev) => [...prev, trimmed]);
-    setFormData((prev) => ({ ...prev, location: trimmed }));
-    setNewRoomName("");
-    setShowNewRoom(false);
-    toast.success("Sala adicionada!");
+
+    if (hasUnsavedChanges) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+
+    closeDialog();
+  };
+
+  const handleAddLocal = async () => {
+    const nome = newLocalData.nome.trim();
+    const predio = newLocalData.predio.trim();
+    const descricao = newLocalData.descricao.trim();
+
+    if (!nome || !predio) {
+      toast.error("Preencha nome da sala e prédio.");
+      return;
+    }
+
+    if (!isLocalUnique(nome, predio)) {
+      toast.error("Esse local já existe.");
+      return;
+    }
+
+    try {
+      const created = await addLocal({ nome, predio, descricao });
+      setFormData((prev) => ({ ...prev, location: formatLocalDisplay(created) }));
+      setShowNewLocalForm(false);
+      setNewLocalData({ nome: "", predio: "", descricao: "" });
+    } catch (error) {
+      console.error("Error adding local:", error);
+    }
   };
 
   const handleTVToggle = (tvId: string) => {
@@ -154,8 +214,10 @@ export function EventFormDialog({
       return;
     }
 
-    if (formData.endDateTime <= formData.startDateTime) {
-      toast.error("A data/hora de término deve ser posterior ao início.");
+    const minEndDateTime = new Date(formData.startDateTime.getTime() + 60 * 60 * 1000);
+
+    if (formData.endDateTime < minEndDateTime) {
+      toast.error("O término deve ser pelo menos 1 hora após o início.");
       return;
     }
 
@@ -173,14 +235,16 @@ export function EventFormDialog({
       tags: formData.tags,
     });
 
-    onOpenChange(false);
+    clearDraft();
+    discardChanges();
+    closeDialog();
   };
 
   const selectedTVs = useMemo(() => tvs.filter((tv) => formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
   const unselectedTVs = useMemo(() => tvs.filter((tv) => !formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="glass-card-strong border-border max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle className="text-xl">
@@ -209,10 +273,10 @@ export function EventFormDialog({
               value={formData.location}
               onValueChange={(val) => {
                 if (val === "__new__") {
-                  setShowNewRoom(true);
+                  setShowNewLocalForm(true);
                 } else {
                   setFormData((prev) => ({ ...prev, location: val }));
-                  setShowNewRoom(false);
+                  setShowNewLocalForm(false);
                 }
               }}
             >
@@ -220,40 +284,74 @@ export function EventFormDialog({
                 <SelectValue placeholder="Selecione um local" />
               </SelectTrigger>
               <SelectContent>
-                {rooms.map((room) => (
-                  <SelectItem key={room} value={room}>
-                    {room}
+                {locais.map((local) => {
+                  const display = formatLocalDisplay(local);
+                  return (
+                    <SelectItem key={local.id} value={display}>
+                      {display}
+                    </SelectItem>
+                  );
+                })}
+                {formData.location &&
+                  !locais.some((local) => formatLocalDisplay(local) === formData.location) && (
+                  <SelectItem value={formData.location}>
+                    {formData.location}
                   </SelectItem>
-                ))}
+                )}
                 <SelectItem value="__new__">
                   <span className="flex items-center gap-2 text-primary font-medium">
                     <Plus className="w-3 h-3" />
-                    Cadastrar novo local
+                    + Adicionar novo local
                   </span>
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {showNewRoom && (
-              <div className="flex gap-2 mt-2">
+            {showNewLocalForm && (
+              <div className="space-y-2 mt-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Building2 className="w-4 h-4 text-primary" />
+                  Novo Local
+                </div>
                 <Input
-                  value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder="Ex: Sala 301 - Bloco D"
-                  className="bg-input/50 border-border/50 flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddRoom();
-                    }
-                  }}
+                  value={newLocalData.nome}
+                  onChange={(e) =>
+                    setNewLocalData((prev) => ({ ...prev, nome: e.target.value }))
+                  }
+                  placeholder="Nome da sala (ex: Sala 101)"
+                  className="bg-input/50 border-border/50"
                 />
-                <Button type="button" size="sm" onClick={handleAddRoom} className="bg-primary hover:bg-primary/90">
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewRoom(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
+                <Input
+                  value={newLocalData.predio}
+                  onChange={(e) =>
+                    setNewLocalData((prev) => ({ ...prev, predio: e.target.value }))
+                  }
+                  placeholder="Prédio (ex: Prédio A)"
+                  className="bg-input/50 border-border/50"
+                />
+                <Textarea
+                  value={newLocalData.descricao}
+                  onChange={(e) =>
+                    setNewLocalData((prev) => ({ ...prev, descricao: e.target.value }))
+                  }
+                  placeholder="Descrição (opcional)"
+                  className="bg-input/50 border-border/50"
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" onClick={handleAddLocal} className="bg-primary hover:bg-primary/90">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Salvar Local
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowNewLocalForm(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -299,7 +397,13 @@ export function EventFormDialog({
           <div className="space-y-4">
             <DateTimePicker
               value={formData.startDateTime}
-              onChange={(date) => setFormData((prev) => ({ ...prev, startDateTime: date }))}
+              onChange={(date) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  startDateTime: date,
+                  endDateTime: date ? new Date(date.getTime() + 60 * 60 * 1000) : prev.endDateTime,
+                }))
+              }
               label="Início"
               showPast={!!editingEvent}
             />
@@ -359,7 +463,7 @@ export function EventFormDialog({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className="flex-1">
               Cancelar
             </Button>
             <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
@@ -368,6 +472,31 @@ export function EventFormDialog({
           </div>
         </form>
       </DialogContent>
+
+      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+        <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Existem alterações não salvas neste formulário. Deseja descartar e fechar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearDraft();
+                discardChanges();
+                setConfirmDiscardOpen(false);
+                closeDialog();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

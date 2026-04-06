@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -26,6 +26,12 @@ export function DateTimePicker({
   const [tempTime, setTempTime] = useState<string>(
     value ? format(value, 'HH:mm') : '09:00'
   );
+
+  useEffect(() => {
+    if (value) {
+      setTempTime(format(value, 'HH:mm'));
+    }
+  }, [value]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -70,8 +76,17 @@ export function DateTimePicker({
               : 'Selecione data e hora'}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 glass-card-strong border-border" align="start">
-          <div className="p-4 space-y-4">
+        <PopoverContent
+          align="start"
+          side="bottom"
+          sideOffset={8}
+          collisionPadding={20}
+          className={cn(
+            "w-[min(100vw-2rem,22rem)] max-w-[calc(100vw-1.5rem)] p-0 glass-card-strong border-border",
+            "max-h-[min(85vh,32rem)] flex flex-col overflow-hidden"
+          )}
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4 space-y-4 custom-scrollbar">
             {/* Calendar */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase">
@@ -146,11 +161,9 @@ export function DateTimePicker({
               </div>
             )}
 
-            {/* Close button */}
-            <Button
-              className="w-full"
-              onClick={() => setOpen(false)}
-            >
+          </div>
+          <div className="flex-shrink-0 border-t border-border/50 bg-popover/95 p-3 sm:p-4">
+            <Button className="w-full" type="button" onClick={() => setOpen(false)}>
               Confirmar
             </Button>
           </div>

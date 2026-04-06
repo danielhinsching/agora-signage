@@ -21,6 +21,14 @@ export interface Event {
   createdAt: string;
 }
 
+export interface Local {
+  id: string;
+  nome: string;
+  predio: string;
+  descricao?: string;
+  createdAt: string;
+}
+
 export interface User {
   username: string;
   isAuthenticated: boolean;

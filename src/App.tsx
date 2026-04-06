@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AnalyticsDashboard from "./pages/admin/Analytics";
 import TVsManagement from "./pages/admin/TVsManagement";
 import EventsManagement from "./pages/admin/EventsManagement";
+import LocaisManagement from "./pages/admin/LocaisManagement";
 import TVPlayer from "./pages/TVPlayer";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="tvs" element={<TVsManagement />} />
             <Route path="events" element={<EventsManagement />} />
+            <Route path="locais" element={<LocaisManagement />} />
           </Route>
           
           {/* TV Player Route */}

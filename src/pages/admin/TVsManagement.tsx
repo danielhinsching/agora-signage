@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTVs } from "@/hooks/useTVs";
 import { TV, TVOrientation } from "@/types";
+import { usePersistentForm } from "@/hooks/usePersistentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,30 +46,52 @@ const TVsManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTV, setEditingTV] = useState<TV | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    orientation: "horizontal" as TVOrientation,
+  const initialFormData = useMemo(
+    () => ({
+      name: editingTV?.name ?? "",
+      slug: editingTV?.slug ?? "",
+      orientation: editingTV?.orientation ?? ("horizontal" as TVOrientation),
+    }),
+    [editingTV]
+  );
+
+  const draftKey = editingTV ? `form_tv_draft_edit_${editingTV.id}` : "form_tv_draft_new";
+
+  const { formData, setFormData, hasUnsavedChanges, clearDraft, discardChanges } = usePersistentForm({
+    storageKey: draftKey,
+    initialValue: initialFormData,
+    isOpen: isDialogOpen,
   });
 
   const resetForm = () => {
-    setFormData({ name: "", slug: "", orientation: "horizontal" });
+    discardChanges();
     setEditingTV(null);
   };
 
   const handleOpenDialog = (tv?: TV) => {
-    if (tv) {
-      setEditingTV(tv);
-      setFormData({
-        name: tv.name,
-        slug: tv.slug,
-        orientation: tv.orientation,
-      });
-    } else {
-      resetForm();
-    }
+    setEditingTV(tv ?? null);
     setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    resetForm();
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setIsDialogOpen(true);
+      return;
+    }
+
+    if (hasUnsavedChanges) {
+      setConfirmDiscardOpen(true);
+      return;
+    }
+
+    closeDialog();
   };
 
   const generateSlug = (name: string) => {
@@ -102,8 +125,8 @@ const TVsManagement = () => {
       } else {
         await addTV(formData);
       }
-      setIsDialogOpen(false);
-      resetForm();
+      clearDraft();
+      closeDialog();
     } catch (error) {
       console.error("Error saving TV:", error);
     }
@@ -141,7 +164,7 @@ const TVsManagement = () => {
             Cadastre e gerencie as TVs do parque tecnológico
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button
               onClick={() => handleOpenDialog()}
@@ -228,7 +251,7 @@ const TVsManagement = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => handleDialogOpenChange(false)}
                   className="flex-1"
                 >
                   Cancelar
@@ -370,6 +393,30 @@ const TVsManagement = () => {
               className="bg-destructive hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+        <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Existem alterações não salvas neste formulário. Deseja descartar e fechar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearDraft();
+                setConfirmDiscardOpen(false);
+                closeDialog();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Descartar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

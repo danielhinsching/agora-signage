@@ -15,36 +15,29 @@ const CAROUSEL_INTERVAL = 5000
 
 // ─── Shared Event Card (larger typography) ──────────────────────────
 function EventItem({ event }: { event: Event }) {
+  const upperName = event.name.toLocaleUpperCase("pt-BR")
+  const upperLocation = event.location?.toLocaleUpperCase("pt-BR")
+
   return (
     <div className="border-b border-[#E6A020]/30 px-6 py-5 flex flex-col justify-center overflow-hidden">
-      <p className="font-bold text-gray-900 text-2xl leading-tight mb-2 truncate">
-        {event.name}
+      <p className="font-bold text-gray-900 text-2xl leading-tight mb-2 break-words">
+        {upperName}
       </p>
-      <div className="flex items-center gap-2 text-gray-700 text-lg mb-1">
+      <div className="flex items-center gap-3 text-gray-700 text-lg mb-1 flex-wrap">
         <Clock className="w-5 h-5 text-[#F5A623] flex-shrink-0" />
         <span className="font-semibold">
           {format(new Date(event.startDateTime), "HH:mm")} até{" "}
           {format(new Date(event.endDateTime), "HH:mm")}
         </span>
+        {event.location && (
+          <>
+            <span className="text-[#d4911a]">•</span>
+            <MapPin className="w-5 h-5 text-[#F5A623] flex-shrink-0" />
+            <span className="truncate min-w-0">{upperLocation}</span>
+          </>
+        )}
       </div>
-      {event.location && (
-        <div className="flex items-center gap-2 text-gray-600 text-lg mb-1">
-          <MapPin className="w-5 h-5 text-[#F5A623] flex-shrink-0" />
-          <span className="truncate">{event.location}</span>
-        </div>
-      )}
-      {event.tags && event.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {event.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-3 py-1 bg-[#F5A623]/20 text-[#c47d00] rounded text-sm font-semibold border border-[#F5A623]/40"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* tags permanecem no evento (Firestore) para análise/cobertura; não exibidas na TV */}
     </div>
   )
 }
@@ -52,31 +45,21 @@ function EventItem({ event }: { event: Event }) {
 // ─── Carousel wrapper ───────────────────────────────────────────────
 function CarouselEvents({
   events,
+  perPage,
   containerClassName,
 }: {
   events: Event[]
+  perPage: number
   containerClassName?: string
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [perPage, setPerPage] = useState(3)
   const [page, setPage] = useState(0)
   const [animating, setAnimating] = useState(false)
 
-  useEffect(() => {
-    const calc = () => {
-      if (!ref.current) return
-      const h = ref.current.clientHeight
-      const cardH = 130
-      setPerPage(Math.max(1, Math.floor(h / cardH)))
-      setPage(0)
-    }
-    calc()
-    const obs = new ResizeObserver(calc)
-    if (ref.current) obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [])
-
   const totalPages = Math.ceil(events.length / perPage)
+
+  useEffect(() => {
+    setPage(0)
+  }, [events, perPage])
 
   useEffect(() => {
     if (totalPages <= 1) return
@@ -93,7 +76,7 @@ function CarouselEvents({
   const visible = events.slice(page * perPage, page * perPage + perPage)
 
   return (
-    <div ref={ref} className={cn("flex-1 overflow-hidden relative", containerClassName)}>
+    <div className={cn("flex-1 overflow-hidden relative", containerClassName)}>
       <div
         className="flex flex-col h-full"
         style={{
@@ -170,6 +153,8 @@ function DayColumn({
   day: { label: string; dateLabel: string; isToday: boolean }
   dayEvents: Event[]
 }) {
+  const maxEventsPerPage = 2
+
   return (
     <div
       className={cn(
@@ -189,7 +174,11 @@ function DayColumn({
         <span className="text-gray-800 text-lg font-bold">{day.dateLabel}</span>
       </div>
       {dayEvents.length > 0 ? (
-        <CarouselEvents events={dayEvents} containerClassName="bg-white" />
+        <CarouselEvents
+          events={dayEvents}
+          perPage={maxEventsPerPage}
+          containerClassName="bg-white"
+        />
       ) : (
         <div className="flex-1 bg-white" />
       )}
@@ -205,8 +194,10 @@ function VerticalDaySection({
   day: { label: string; dateLabel: string; isToday: boolean }
   events: Event[]
 }) {
+  const maxEventsPerPage = 2
+
   return (
-    <div className={cn("flex flex-col min-h-0", day.isToday ? "flex-[2]" : "flex-1")}>
+    <div className="flex flex-col min-h-0 flex-1">
       <div
         className={cn(
           "px-5 py-3 flex items-center gap-3",
@@ -219,7 +210,11 @@ function VerticalDaySection({
         <span className="text-gray-800 font-bold text-lg">{day.dateLabel}</span>
       </div>
       {events.length > 0 ? (
-        <CarouselEvents events={events} containerClassName="bg-white" />
+        <CarouselEvents
+          events={events}
+          perPage={maxEventsPerPage}
+          containerClassName="bg-white"
+        />
       ) : (
         <div className="flex-1 bg-white flex items-center justify-center">
           <span className="text-gray-400 text-lg">Sem eventos</span>

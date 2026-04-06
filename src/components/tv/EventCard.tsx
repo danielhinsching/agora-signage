@@ -13,6 +13,8 @@ export function EventCard({ event, compact, isToday }: EventCardProps) {
   const end = new Date(event.endDateTime);
   const now = new Date();
   const isActive = now >= start && now <= end;
+  const upperName = event.name.toLocaleUpperCase("pt-BR");
+  const upperLocation = event.location.toLocaleUpperCase("pt-BR");
 
   return (
     <div className={cn(
@@ -26,7 +28,7 @@ export function EventCard({ event, compact, isToday }: EventCardProps) {
         "font-bold text-card-foreground leading-tight",
         compact ? "text-lg" : "text-xl"
       )}>
-        {event.name}
+        {upperName}
         {isActive && (
           <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -35,7 +37,7 @@ export function EventCard({ event, compact, isToday }: EventCardProps) {
         )}
       </div>
       <div className={cn("text-muted-foreground mt-2 flex items-center gap-1.5", compact ? "text-sm" : "text-base")}>
-       📍  {event.location}
+       📍  {upperLocation}
       </div>
       <div className={cn("text-muted-foreground flex items-center gap-1.5 mt-1", compact ? "text-sm" : "text-base")}>
         🕐 {format(start, 'HH:mm')} – {format(end, 'HH:mm')}

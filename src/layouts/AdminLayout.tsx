@@ -3,7 +3,7 @@ import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
-import { Tv, Calendar, LogOut, LayoutDashboard, Sun, Moon, TrendingUp, Menu, X } from 'lucide-react';
+import { Tv, Calendar, LogOut, LayoutDashboard, Sun, Moon, TrendingUp, Menu, X, Building2 } from 'lucide-react';
 
 const AdminLayout = () => {
   const { isAuthenticated, loading, logout, user } = useAuth();
@@ -35,6 +35,7 @@ const AdminLayout = () => {
     { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { path: '/admin/analytics', label: 'Analytics', icon: TrendingUp },
     { path: '/admin/tvs', label: 'TVs', icon: Tv },
+    { path: '/admin/locais', label: 'Locais', icon: Building2 },
     { path: '/admin/events', label: 'Eventos', icon: Calendar },
   ];
 

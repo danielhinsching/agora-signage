@@ -17,12 +17,13 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { TV, Event } from '@/types';
+import { TV, Event, Local } from '@/types';
 
 // Collection names
 export const COLLECTIONS = {
   TVS: 'tvs',
   EVENTS: 'events',
+  LOCAIS: 'locais',
   USERS: 'users',
 } as const;
 
@@ -148,6 +149,40 @@ export function subscribeEventsForTV(tvId: string, callback: (events: Event[]) =
   });
 }
 
+// ============== Locais Operations ==============
+
+export async function addLocal(localData: Omit<Local, 'id' | 'createdAt'>) {
+  const docRef = await addDoc(collection(db, COLLECTIONS.LOCAIS), {
+    ...localData,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateLocal(id: string, updates: Partial<Local>) {
+  const docRef = doc(db, COLLECTIONS.LOCAIS, id);
+  await updateDoc(docRef, updates);
+}
+
+export async function deleteLocal(id: string) {
+  const docRef = doc(db, COLLECTIONS.LOCAIS, id);
+  await deleteDoc(docRef);
+}
+
+export async function getAllLocais(): Promise<Local[]> {
+  const querySnapshot = await getDocs(collection(db, COLLECTIONS.LOCAIS));
+  return querySnapshot.docs.map((doc) => convertDocToLocal(doc.id, doc.data()));
+}
+
+export function subscribeLocais(callback: (locais: Local[]) => void) {
+  const q = query(collection(db, COLLECTIONS.LOCAIS), orderBy('nome', 'asc'));
+
+  return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+    const locais = snapshot.docs.map((doc) => convertDocToLocal(doc.id, doc.data()));
+    callback(locais);
+  });
+}
+
 // ============== Helper Functions ==============
 
 function convertDocToTV(id: string, data: DocumentData): TV {
@@ -173,13 +208,35 @@ function convertDocToEvent(id: string, data: DocumentData): Event {
   };
 }
 
-function convertTimestamp(timestamp: any): string {
+function convertDocToLocal(id: string, data: DocumentData): Local {
+  return {
+    id,
+    nome: data.nome,
+    predio: data.predio,
+    descricao: data.descricao || '',
+    createdAt: convertTimestamp(data.createdAt),
+  };
+}
+
+function convertTimestamp(timestamp: unknown): string {
   if (!timestamp) return new Date().toISOString();
   if (timestamp instanceof Timestamp) {
     return timestamp.toDate().toISOString();
   }
-  if (timestamp.toDate) {
-    return timestamp.toDate().toISOString();
+  if (
+    typeof timestamp === 'object' &&
+    timestamp !== null &&
+    'toDate' in timestamp &&
+    typeof (timestamp as { toDate: unknown }).toDate === 'function'
+  ) {
+    const converter = timestamp as { toDate: () => Date };
+    return converter.toDate().toISOString();
   }
-  return new Date(timestamp).toISOString();
+  if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+    return new Date(timestamp).toISOString();
+  }
+  if (timestamp instanceof Date) {
+    return timestamp.toISOString();
+  }
+  return new Date().toISOString();
 }
