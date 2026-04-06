@@ -2,8 +2,8 @@ import { useMemo, useState, useEffect, useRef } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
 import { format, startOfWeek, endOfWeek, addDays, getDay, isWithinInterval } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { Clock, MapPin } from "lucide-react"
-import { useClock } from "@/hooks/use-clock"
 
 interface AgendaGridProps {
   events: Event[]
@@ -12,13 +12,13 @@ interface AgendaGridProps {
 }
 
 const WEEKDAYS_PT = [
-  { index: 0, label: "Dom", short: "D" },
-  { index: 1, label: "Seg", short: "S" },
-  { index: 2, label: "Ter", short: "T" },
-  { index: 3, label: "Qua", short: "Q" },
-  { index: 4, label: "Qui", short: "Q" },
-  { index: 5, label: "Sex", short: "S" },
-  { index: 6, label: "Sab", short: "S" },
+  { index: 0, label: "Domingo", short: "Dom" },
+  { index: 1, label: "Segunda", short: "Seg" },
+  { index: 2, label: "Terça", short: "Ter" },
+  { index: 3, label: "Quarta", short: "Qua" },
+  { index: 4, label: "Quinta", short: "Qui" },
+  { index: 5, label: "Sexta", short: "Sex" },
+  { index: 6, label: "Sábado", short: "Sáb" },
 ]
 
 const CAROUSEL_INTERVAL = 5000
@@ -26,29 +26,29 @@ const CAROUSEL_INTERVAL = 5000
 // ─── Shared Event Card ───────────────────────────────────────────────
 function EventItem({ event }: { event: Event }) {
   return (
-    <div className="border-b border-[#E6A020]/30 px-4 py-3 flex flex-col justify-center overflow-hidden">
-      <p className="font-bold text-gray-900 text-sm leading-snug mb-1 truncate">
+    <div className="border-b border-[#E6A020]/30 px-5 py-4 flex flex-col justify-center overflow-hidden">
+      <p className="font-bold text-gray-900 text-base leading-snug mb-1.5 truncate">
         {event.name}
       </p>
-      <div className="flex items-center gap-1 text-gray-700 text-xs mb-1">
-        <Clock className="w-3 h-3 text-[#F5A623] flex-shrink-0" />
+      <div className="flex items-center gap-1.5 text-gray-700 text-sm mb-1">
+        <Clock className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
         <span className="font-medium">
           {format(new Date(event.startDateTime), "HH:mm")} até{" "}
           {format(new Date(event.endDateTime), "HH:mm")}
         </span>
       </div>
       {event.location && (
-        <div className="flex items-center gap-1 text-gray-600 text-xs mb-1">
-          <MapPin className="w-3 h-3 text-[#F5A623] flex-shrink-0" />
+        <div className="flex items-center gap-1.5 text-gray-600 text-sm mb-1">
+          <MapPin className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
           <span className="truncate">{event.location}</span>
         </div>
       )}
       {event.tags && event.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-1 mt-1.5">
           {event.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
+              className="px-2 py-0.5 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
             >
               {tag}
             </span>
@@ -76,7 +76,7 @@ function CarouselEvents({
     const calc = () => {
       if (!ref.current) return
       const h = ref.current.clientHeight
-      const cardH = 90
+      const cardH = 100
       setPerPage(Math.max(1, Math.floor(h / cardH)))
       setPage(0)
     }
@@ -139,7 +139,7 @@ function DayColumn({
   dayEvents,
   isToday,
 }: {
-  wd: { dayOfWeek: number; label: string }
+  wd: { dayOfWeek: number; label: string; dateLabel: string }
   dayEvents: Event[]
   isToday: boolean
 }) {
@@ -152,13 +152,14 @@ function DayColumn({
     >
       <div
         className={cn(
-          "flex items-center justify-center py-4 px-2 border-b-2 border-[#d4911a]",
+          "flex flex-col items-center justify-center py-4 px-2 border-b-2 border-[#d4911a]",
           isToday ? "bg-[#e08e0e]" : "bg-[#F5A623]"
         )}
       >
-        <h3 className="text-gray-900 font-black text-3xl uppercase tracking-tight">
+        <h3 className="text-gray-900 font-black text-2xl uppercase tracking-tight">
           {wd.label}
         </h3>
+        <span className="text-gray-800 text-sm font-semibold">{wd.dateLabel}</span>
       </div>
       {dayEvents.length > 0 ? (
         <CarouselEvents events={dayEvents} containerClassName="bg-white" />
@@ -183,7 +184,7 @@ function VerticalDaySection({
     <div className={cn("flex flex-col min-h-0", isToday ? "flex-[2]" : "flex-1")}>
       <div
         className={cn(
-          "px-4 py-2 flex items-center",
+          "px-5 py-3 flex items-center",
           isToday
             ? "bg-[#F5A623] border-b-2 border-[#d4911a]"
             : "bg-gray-200 border-b border-gray-300"
@@ -191,7 +192,7 @@ function VerticalDaySection({
       >
         <h3
           className={cn(
-            "font-black text-lg uppercase tracking-tight",
+            "font-black text-xl uppercase tracking-tight",
             isToday ? "text-gray-900" : "text-gray-700"
           )}
         >
@@ -202,7 +203,7 @@ function VerticalDaySection({
         <CarouselEvents events={events} containerClassName="bg-white" />
       ) : (
         <div className="flex-1 bg-white flex items-center justify-center">
-          <span className="text-gray-400 text-xs">Sem eventos</span>
+          <span className="text-gray-400 text-sm">Sem eventos</span>
         </div>
       )}
     </div>
@@ -223,7 +224,7 @@ export function AgendaGrid({
       return {
         date: day,
         dayOfWeek: getDay(day),
-        label: WEEKDAYS_PT[getDay(day)].label,
+        label: WEEKDAYS_PT[getDay(day)].short,
         dateLabel: format(day, "dd/MM"),
       }
     })
@@ -266,7 +267,7 @@ export function AgendaGrid({
   if (events.length === 0) {
     return (
       <div className="flex-1 bg-[#F5A623] flex items-center justify-center p-8">
-        <p className="text-gray-900 text-2xl font-bold">
+        <p className="text-gray-900 text-3xl font-bold">
           Nenhum evento programado
         </p>
       </div>
@@ -275,7 +276,6 @@ export function AgendaGrid({
 
   // ─── Vertical orientation ──────────────────────────────────────────
   if (orientation === "vertical") {
-    // Today first, then next work days
     const todayWd = workDays.find((wd) => wd.dayOfWeek === currentDayOfWeek)
     const otherDays = workDays.filter((wd) => wd.dayOfWeek !== currentDayOfWeek).slice(0, 5)
 
@@ -300,24 +300,23 @@ export function AgendaGrid({
     )
   }
 
-  // ─── Horizontal orientation (original) ─────────────────────────────
+  // ─── Horizontal orientation ─────────────────────────────────────
   return (
     <div className="flex-1 flex flex-row overflow-hidden">
-      <div className="flex-shrink-0 w-[200px] bg-[#F5A623] flex flex-col items-center justify-center p-6 relative">
+      <div className="flex-shrink-0 w-[220px] bg-[#F5A623] flex flex-col items-center justify-center p-6 relative">
         <div className="absolute top-6 left-6 right-6 h-1 bg-gray-900 rounded-full" />
-        <div className="flex flex-col items-center text-center gap-2 mt-4">
-          <h2 className="text-gray-900 font-black text-xl leading-tight">
-            Calendario de eventos
+        <div className="flex flex-col items-center text-center gap-3 mt-4">
+          <h2 className="text-gray-900 font-black text-2xl leading-tight">
+            Calendário de Eventos
           </h2>
           <h1 className="text-gray-900 font-black text-3xl leading-none">
-            Agora Tech Park
+            Ágora Tech Park
           </h1>
-          <p className="text-[#c47d00] font-bold text-xs mt-3 uppercase tracking-wide">
-            Acompanhe a programacao
+          <p className="text-[#c47d00] font-bold text-sm mt-3 uppercase tracking-wide">
+            Acompanhe a programação
           </p>
-          <p className="text-gray-900 font-bold text-sm">
-            De {weekDays.find((d) => d.dayOfWeek === 1)?.dateLabel} a{" "}
-            {weekDays.find((d) => d.dayOfWeek === 5)?.dateLabel}
+          <p className="text-gray-900 font-bold text-base">
+            {workDays[0]?.dateLabel} a {workDays[workDays.length - 1]?.dateLabel}
           </p>
         </div>
       </div>

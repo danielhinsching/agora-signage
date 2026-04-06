@@ -25,11 +25,11 @@ export function TvHeader({ orientation }: TvHeaderProps) {
       <img
         src="/agora-tech.svg"
         alt="Ágora Tech Park"
-        className="h-8 w-auto"
+        className="h-10 w-auto"
       />
       <div className="flex items-center gap-6">
-        <div className="text-sm capitalize text-gray-500">{date}</div>
-        <div className="text-2xl font-light tabular-nums text-gray-900">{time}</div>
+        <div className="text-base capitalize text-gray-500">{date}</div>
+        <div className="text-3xl font-light tabular-nums text-gray-900">{time}</div>
         <button
           onClick={toggleFullscreen}
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
