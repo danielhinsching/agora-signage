@@ -23,7 +23,7 @@ export function TvHeader({ orientation }: TvHeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b-4 border-[#F5A623] flex-shrink-0">
       <img
-        src="/public/agora-tech.svg"
+        src="/agora-tech.svg"
         alt="Ágora Tech Park"
         className="h-8 w-auto"
       />
