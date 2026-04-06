@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, startOfWeek, endOfWeek, addDays, getDay, isWithinInterval } from "date-fns"
+import { format, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Clock, MapPin } from "lucide-react"
 
@@ -11,44 +11,34 @@ interface AgendaGridProps {
   currentDayOfWeek: number
 }
 
-const WEEKDAYS_PT = [
-  { index: 0, label: "Domingo", short: "Dom" },
-  { index: 1, label: "Segunda", short: "Seg" },
-  { index: 2, label: "Terça", short: "Ter" },
-  { index: 3, label: "Quarta", short: "Qua" },
-  { index: 4, label: "Quinta", short: "Qui" },
-  { index: 5, label: "Sexta", short: "Sex" },
-  { index: 6, label: "Sábado", short: "Sáb" },
-]
-
 const CAROUSEL_INTERVAL = 5000
 
-// ─── Shared Event Card ───────────────────────────────────────────────
+// ─── Shared Event Card (larger typography) ──────────────────────────
 function EventItem({ event }: { event: Event }) {
   return (
-    <div className="border-b border-[#E6A020]/30 px-5 py-4 flex flex-col justify-center overflow-hidden">
-      <p className="font-bold text-gray-900 text-base leading-snug mb-1.5 truncate">
+    <div className="border-b border-[#E6A020]/30 px-6 py-5 flex flex-col justify-center overflow-hidden">
+      <p className="font-bold text-gray-900 text-2xl leading-tight mb-2 truncate">
         {event.name}
       </p>
-      <div className="flex items-center gap-1.5 text-gray-700 text-sm mb-1">
-        <Clock className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
-        <span className="font-medium">
+      <div className="flex items-center gap-2 text-gray-700 text-lg mb-1">
+        <Clock className="w-5 h-5 text-[#F5A623] flex-shrink-0" />
+        <span className="font-semibold">
           {format(new Date(event.startDateTime), "HH:mm")} até{" "}
           {format(new Date(event.endDateTime), "HH:mm")}
         </span>
       </div>
       {event.location && (
-        <div className="flex items-center gap-1.5 text-gray-600 text-sm mb-1">
-          <MapPin className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
+        <div className="flex items-center gap-2 text-gray-600 text-lg mb-1">
+          <MapPin className="w-5 h-5 text-[#F5A623] flex-shrink-0" />
           <span className="truncate">{event.location}</span>
         </div>
       )}
       {event.tags && event.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {event.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 bg-[#F5A623]/20 text-[#c47d00] rounded text-xs font-medium border border-[#F5A623]/40"
+              className="px-3 py-1 bg-[#F5A623]/20 text-[#c47d00] rounded text-sm font-semibold border border-[#F5A623]/40"
             >
               {tag}
             </span>
@@ -59,7 +49,7 @@ function EventItem({ event }: { event: Event }) {
   )
 }
 
-// ─── Carousel wrapper for a list of events ───────────────────────────
+// ─── Carousel wrapper ───────────────────────────────────────────────
 function CarouselEvents({
   events,
   containerClassName,
@@ -68,7 +58,7 @@ function CarouselEvents({
   containerClassName?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [perPage, setPerPage] = useState(4)
+  const [perPage, setPerPage] = useState(3)
   const [page, setPage] = useState(0)
   const [animating, setAnimating] = useState(false)
 
@@ -76,7 +66,7 @@ function CarouselEvents({
     const calc = () => {
       if (!ref.current) return
       const h = ref.current.clientHeight
-      const cardH = 100
+      const cardH = 130
       setPerPage(Math.max(1, Math.floor(h / cardH)))
       setPage(0)
     }
@@ -133,33 +123,70 @@ function CarouselEvents({
   )
 }
 
-// ─── Horizontal Day Column ───────────────────────────────────────────
+// ─── Build consecutive days starting from today ─────────────────────
+function useConsecutiveDays(numDays: number) {
+  return useMemo(() => {
+    const today = new Date()
+    return Array.from({ length: numDays }, (_, i) => {
+      const day = addDays(today, i)
+      const dayOfWeek = day.getDay()
+      const shortNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+      return {
+        date: day,
+        dayOfWeek,
+        label: shortNames[dayOfWeek],
+        dateLabel: format(day, "dd/MM"),
+        isToday: i === 0,
+      }
+    })
+  }, [numDays])
+}
+
+// ─── Group events by date string ────────────────────────────────────
+function useGroupedByDate(events: Event[], days: ReturnType<typeof useConsecutiveDays>) {
+  return useMemo(() => {
+    const map = new Map<string, Event[]>()
+    days.forEach((d) => map.set(format(d.date, "yyyy-MM-dd"), []))
+
+    events.forEach((event) => {
+      const key = format(new Date(event.startDateTime), "yyyy-MM-dd")
+      if (map.has(key)) map.get(key)!.push(event)
+    })
+
+    map.forEach((dayEvents) => {
+      dayEvents.sort(
+        (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
+      )
+    })
+    return map
+  }, [events, days])
+}
+
+// ─── Horizontal Day Column ──────────────────────────────────────────
 function DayColumn({
-  wd,
+  day,
   dayEvents,
-  isToday,
 }: {
-  wd: { dayOfWeek: number; label: string; dateLabel: string }
+  day: { label: string; dateLabel: string; isToday: boolean }
   dayEvents: Event[]
-  isToday: boolean
 }) {
   return (
     <div
       className={cn(
         "flex-1 min-w-0 flex flex-col border-r border-[#e6a020]/30 last:border-r-0",
-        isToday && "ring-2 ring-inset ring-[#c47d00]"
+        day.isToday && "ring-2 ring-inset ring-[#c47d00]"
       )}
     >
       <div
         className={cn(
           "flex flex-col items-center justify-center py-4 px-2 border-b-2 border-[#d4911a]",
-          isToday ? "bg-[#e08e0e]" : "bg-[#F5A623]"
+          "bg-[#F5A623]"
         )}
       >
         <h3 className="text-gray-900 font-black text-2xl uppercase tracking-tight">
-          {wd.label}
+          {day.isToday ? "HOJE" : day.label}
         </h3>
-        <span className="text-gray-800 text-sm font-semibold">{wd.dateLabel}</span>
+        <span className="text-gray-800 text-lg font-bold">{day.dateLabel}</span>
       </div>
       {dayEvents.length > 0 ? (
         <CarouselEvents events={dayEvents} containerClassName="bg-white" />
@@ -170,99 +197,45 @@ function DayColumn({
   )
 }
 
-// ─── Vertical Day Section ────────────────────────────────────────────
+// ─── Vertical Day Section ───────────────────────────────────────────
 function VerticalDaySection({
-  label,
+  day,
   events,
-  isToday,
 }: {
-  label: string
+  day: { label: string; dateLabel: string; isToday: boolean }
   events: Event[]
-  isToday: boolean
 }) {
   return (
-    <div className={cn("flex flex-col min-h-0", isToday ? "flex-[2]" : "flex-1")}>
+    <div className={cn("flex flex-col min-h-0", day.isToday ? "flex-[2]" : "flex-1")}>
       <div
         className={cn(
-          "px-5 py-3 flex items-center",
-          isToday
-            ? "bg-[#F5A623] border-b-2 border-[#d4911a]"
-            : "bg-gray-200 border-b border-gray-300"
+          "px-5 py-3 flex items-center gap-3",
+          "bg-[#F5A623] border-b-2 border-[#d4911a]"
         )}
       >
-        <h3
-          className={cn(
-            "font-black text-xl uppercase tracking-tight",
-            isToday ? "text-gray-900" : "text-gray-700"
-          )}
-        >
-          {isToday ? "HOJE" : label}
+        <h3 className="font-black text-xl uppercase tracking-tight text-gray-900">
+          {day.isToday ? "HOJE" : day.label}
         </h3>
+        <span className="text-gray-800 font-bold text-lg">{day.dateLabel}</span>
       </div>
       {events.length > 0 ? (
         <CarouselEvents events={events} containerClassName="bg-white" />
       ) : (
         <div className="flex-1 bg-white flex items-center justify-center">
-          <span className="text-gray-400 text-sm">Sem eventos</span>
+          <span className="text-gray-400 text-lg">Sem eventos</span>
         </div>
       )}
     </div>
   )
 }
 
-// ─── Main Grid ───────────────────────────────────────────────────────
+// ─── Main Grid ──────────────────────────────────────────────────────
 export function AgendaGrid({
   events,
   orientation,
-  currentDayOfWeek,
 }: AgendaGridProps) {
-  const weekDays = useMemo(() => {
-    const now = new Date()
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 })
-    const allDays = Array.from({ length: 7 }, (_, i) => {
-      const day = addDays(weekStart, i)
-      return {
-        date: day,
-        dayOfWeek: getDay(day),
-        label: WEEKDAYS_PT[getDay(day)].short,
-        dateLabel: format(day, "dd/MM"),
-      }
-    })
-    const todayIndex = allDays.findIndex((d) => d.dayOfWeek === currentDayOfWeek)
-    return [...allDays.slice(todayIndex), ...allDays.slice(0, todayIndex)]
-  }, [currentDayOfWeek])
-
-  const grouped = useMemo(() => {
-    const now = new Date()
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 })
-    const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
-
-    const map = new Map<number, Event[]>()
-    weekDays.forEach((wd) => map.set(wd.dayOfWeek, []))
-
-    events
-      .filter((event) => {
-        const start = new Date(event.startDateTime)
-        return isWithinInterval(start, { start: weekStart, end: weekEnd })
-      })
-      .forEach((event) => {
-        const start = new Date(event.startDateTime)
-        const eventDay = getDay(start)
-        if (map.has(eventDay)) map.get(eventDay)!.push(event)
-      })
-
-    map.forEach((dayEvents) => {
-      dayEvents.sort(
-        (a, b) =>
-          new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
-      )
-    })
-    return map
-  }, [events, weekDays])
-
-  const workDays = weekDays.filter(
-    (wd) => wd.dayOfWeek !== 0 && wd.dayOfWeek !== 6
-  )
+  const days = useConsecutiveDays(5)
+  const grouped = useGroupedByDate(events, days)
 
   if (events.length === 0) {
     return (
@@ -274,33 +247,22 @@ export function AgendaGrid({
     )
   }
 
-  // ─── Vertical orientation ──────────────────────────────────────────
+  // ─── Vertical orientation ─────────────────────────────────────────
   if (orientation === "vertical") {
-    const todayWd = workDays.find((wd) => wd.dayOfWeek === currentDayOfWeek)
-    const otherDays = workDays.filter((wd) => wd.dayOfWeek !== currentDayOfWeek).slice(0, 5)
-
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
-        {todayWd && (
+        {days.map((day) => (
           <VerticalDaySection
-            label="HOJE"
-            events={grouped.get(todayWd.dayOfWeek) || []}
-            isToday={true}
-          />
-        )}
-        {otherDays.map((wd) => (
-          <VerticalDaySection
-            key={wd.dayOfWeek}
-            label={`${wd.label} ${wd.dateLabel}`}
-            events={grouped.get(wd.dayOfWeek) || []}
-            isToday={false}
+            key={day.dateLabel}
+            day={day}
+            events={grouped.get(format(day.date, "yyyy-MM-dd")) || []}
           />
         ))}
       </div>
     )
   }
 
-  // ─── Horizontal orientation ─────────────────────────────────────
+  // ─── Horizontal orientation ───────────────────────────────────────
   return (
     <div className="flex-1 flex flex-row overflow-hidden">
       <div className="flex-shrink-0 w-[220px] bg-[#F5A623] flex flex-col items-center justify-center p-6 relative">
@@ -316,17 +278,16 @@ export function AgendaGrid({
             Acompanhe a programação
           </p>
           <p className="text-gray-900 font-bold text-base">
-            {workDays[0]?.dateLabel} a {workDays[workDays.length - 1]?.dateLabel}
+            {days[0]?.dateLabel} a {days[days.length - 1]?.dateLabel}
           </p>
         </div>
       </div>
 
-      {workDays.map((wd) => (
+      {days.map((day) => (
         <DayColumn
-          key={wd.dayOfWeek}
-          wd={wd}
-          dayEvents={grouped.get(wd.dayOfWeek) || []}
-          isToday={wd.dayOfWeek === currentDayOfWeek}
+          key={day.dateLabel}
+          day={day}
+          dayEvents={grouped.get(format(day.date, "yyyy-MM-dd")) || []}
         />
       ))}
     </div>
