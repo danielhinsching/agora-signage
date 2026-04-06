@@ -9,10 +9,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tv, X, Plus, CheckSquare, Tag } from "lucide-react";
-import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tv, X, Plus, CheckSquare, Tag, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { DateTimePicker } from "./DateTimePicker";
+
+// Default rooms list
+const DEFAULT_ROOMS = [
+  "Auditório Principal - Bloco A",
+  "Sala 101 - Bloco A",
+  "Sala 102 - Bloco A",
+  "Sala 201 - Bloco B",
+  "Sala 202 - Bloco B",
+  "Coworking - Bloco C",
+  "Recepção - Bloco A",
+];
 
 interface EventFormDialogProps {
   open: boolean;
@@ -20,7 +37,6 @@ interface EventFormDialogProps {
   editingEvent: Event | null;
   tvs: TV[];
   onSubmit: (eventData: Omit<Event, "id" | "createdAt">) => void;
-  /** Pre-fill date when creating from calendar click */
   defaultDate?: Date;
 }
 
@@ -41,7 +57,10 @@ export function EventFormDialog({
     tags: [] as string[],
   });
 
-  // Reset/populate form when dialog opens
+  const [rooms, setRooms] = useState<string[]>(DEFAULT_ROOMS);
+  const [showNewRoom, setShowNewRoom] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
+
   useEffect(() => {
     if (!open) return;
 
@@ -54,10 +73,13 @@ export function EventFormDialog({
         tvIds: editingEvent.tvIds,
         tags: editingEvent.tags || [],
       });
+      // Ensure existing location is in the rooms list
+      if (editingEvent.location && !rooms.includes(editingEvent.location)) {
+        setRooms((prev) => [...prev, editingEvent.location]);
+      }
     } else {
       const startDate = defaultDate ? new Date(defaultDate) : new Date();
       startDate.setHours(9, 0, 0, 0);
-
       const endDate = new Date(startDate);
       endDate.setHours(10, 0, 0, 0);
 
@@ -70,7 +92,23 @@ export function EventFormDialog({
         tags: [],
       });
     }
+    setShowNewRoom(false);
+    setNewRoomName("");
   }, [open, editingEvent, defaultDate]);
+
+  const handleAddRoom = () => {
+    const trimmed = newRoomName.trim();
+    if (!trimmed) return;
+    if (rooms.includes(trimmed)) {
+      toast.error("Essa sala já existe.");
+      return;
+    }
+    setRooms((prev) => [...prev, trimmed]);
+    setFormData((prev) => ({ ...prev, location: trimmed }));
+    setNewRoomName("");
+    setShowNewRoom(false);
+    toast.success("Sala adicionada!");
+  };
 
   const handleTVToggle = (tvId: string) => {
     setFormData((prev) => ({
@@ -121,6 +159,11 @@ export function EventFormDialog({
       return;
     }
 
+    if (!formData.location) {
+      toast.error("Selecione um local.");
+      return;
+    }
+
     onSubmit({
       name: formData.name,
       location: formData.location,
@@ -133,13 +176,8 @@ export function EventFormDialog({
     onOpenChange(false);
   };
 
-  const selectedTVs = useMemo(() => {
-    return tvs.filter((tv) => formData.tvIds.includes(tv.id));
-  }, [tvs, formData.tvIds]);
-
-  const unselectedTVs = useMemo(() => {
-    return tvs.filter((tv) => !formData.tvIds.includes(tv.id));
-  }, [tvs, formData.tvIds]);
+  const selectedTVs = useMemo(() => tvs.filter((tv) => formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
+  const unselectedTVs = useMemo(() => tvs.filter((tv) => !formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,35 +192,77 @@ export function EventFormDialog({
             <Label className="text-sm font-medium">Nome do Evento</Label>
             <Input
               value={formData.name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Workshop de Inovação"
               className="bg-input/50 border-border/50 focus:border-primary"
               required
             />
           </div>
 
+          {/* Location Select */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Local</Label>
-            <Input
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              Local / Sala
+            </Label>
+            <Select
               value={formData.location}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, location: e.target.value }))
-              }
-              placeholder="Ex: Auditório Principal"
-              className="bg-input/50 border-border/50 focus:border-primary"
-              required
-            />
+              onValueChange={(val) => {
+                if (val === "__new__") {
+                  setShowNewRoom(true);
+                } else {
+                  setFormData((prev) => ({ ...prev, location: val }));
+                  setShowNewRoom(false);
+                }
+              }}
+            >
+              <SelectTrigger className="bg-input/50 border-border/50">
+                <SelectValue placeholder="Selecione um local" />
+              </SelectTrigger>
+              <SelectContent>
+                {rooms.map((room) => (
+                  <SelectItem key={room} value={room}>
+                    {room}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__new__">
+                  <span className="flex items-center gap-2 text-primary font-medium">
+                    <Plus className="w-3 h-3" />
+                    Cadastrar novo local
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {showNewRoom && (
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newRoomName}
+                  onChange={(e) => setNewRoomName(e.target.value)}
+                  placeholder="Ex: Sala 301 - Bloco D"
+                  className="bg-input/50 border-border/50 flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddRoom();
+                    }
+                  }}
+                />
+                <Button type="button" size="sm" onClick={handleAddRoom} className="bg-primary hover:bg-primary/90">
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewRoom(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Tag className="w-4 h-4 text-primary" />
               Áreas Profissionais
-              <span
-                className={`text-xs font-normal ml-auto ${formData.tags.length >= 3 ? "text-destructive font-semibold" : "text-muted-foreground"}`}
-              >
+              <span className={`text-xs font-normal ml-auto ${formData.tags.length >= 3 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
                 {formData.tags.length}/3 selecionadas
               </span>
             </Label>
@@ -219,23 +299,19 @@ export function EventFormDialog({
           <div className="space-y-4">
             <DateTimePicker
               value={formData.startDateTime}
-              onChange={(date) =>
-                setFormData((prev) => ({ ...prev, startDateTime: date }))
-              }
+              onChange={(date) => setFormData((prev) => ({ ...prev, startDateTime: date }))}
               label="Início"
               showPast={!!editingEvent}
             />
             <DateTimePicker
               value={formData.endDateTime}
-              onChange={(date) =>
-                setFormData((prev) => ({ ...prev, endDateTime: date }))
-              }
+              onChange={(date) => setFormData((prev) => ({ ...prev, endDateTime: date }))}
               label="Término"
               showPast={!!editingEvent}
             />
           </div>
 
-          {/* TV Selection with Chips */}
+          {/* TV Selection */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium flex items-center gap-2">
@@ -243,17 +319,9 @@ export function EventFormDialog({
                 Exibir nas TVs
               </Label>
               {tvs.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSelectAllTVs}
-                  className="text-xs text-primary hover:text-primary/80"
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={handleSelectAllTVs} className="text-xs text-primary hover:text-primary/80">
                   <CheckSquare className="w-3 h-3 mr-1" />
-                  {formData.tvIds.length === tvs.length
-                    ? "Desmarcar Todas"
-                    : "Selecionar Todas"}
+                  {formData.tvIds.length === tvs.length ? "Desmarcar Todas" : "Selecionar Todas"}
                 </Button>
               )}
             </div>
@@ -267,11 +335,7 @@ export function EventFormDialog({
                 {selectedTVs.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {selectedTVs.map((tv) => (
-                      <span
-                        key={tv.id}
-                        className="chip chip-primary group cursor-pointer"
-                        onClick={() => handleRemoveTV(tv.id)}
-                      >
+                      <span key={tv.id} className="chip chip-primary group cursor-pointer" onClick={() => handleRemoveTV(tv.id)}>
                         <Tv className="w-3 h-3" />
                         {tv.name}
                         <X className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -279,18 +343,11 @@ export function EventFormDialog({
                     ))}
                   </div>
                 )}
-
                 {unselectedTVs.length > 0 && (
                   <div className="flex flex-wrap gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                    <span className="text-xs text-muted-foreground w-full mb-1">
-                      Clique para adicionar:
-                    </span>
+                    <span className="text-xs text-muted-foreground w-full mb-1">Clique para adicionar:</span>
                     {unselectedTVs.map((tv) => (
-                      <span
-                        key={tv.id}
-                        className="chip chip-muted cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
-                        onClick={() => handleTVToggle(tv.id)}
-                      >
+                      <span key={tv.id} className="chip chip-muted cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all" onClick={() => handleTVToggle(tv.id)}>
                         <Plus className="w-3 h-3" />
                         {tv.name}
                       </span>
@@ -302,18 +359,10 @@ export function EventFormDialog({
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-primary hover:bg-primary/90"
-            >
+            <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
               {editingEvent ? "Salvar Alterações" : "Cadastrar Evento"}
             </Button>
           </div>
