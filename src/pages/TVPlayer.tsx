@@ -1,17 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
-import { isSameWeek } from 'date-fns';
 import { useParams } from 'react-router-dom';
 import { TV, Event } from '@/types';
 import { TvHeader } from '@/components/tv/TvHeader.tsx';
 import { TvFooter } from '@/components/tv/TvFooter.tsx';
 import { AgendaGrid } from '@/components/tv/AgendaGrid.tsx';
-import { useClock } from "@/hooks/use-clock.ts";
 import { useScreenOrientation } from "@/hooks/use-screen-orientation.ts";
 import { getTVBySlug, subscribeEventsForTV } from '@/lib/db';
 
+type GridOrientation = 'horizontal' | 'vertical' | 'mobile';
+
 export default function TvPlayer() {
   const { slug = 'default' } = useParams<{ slug: string }>();
-  const { dayOfWeek } = useClock();
   const orientation = useScreenOrientation();
   const [tv, setTv] = useState<TV | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
@@ -38,14 +37,9 @@ export default function TvPlayer() {
   useEffect(() => {
     if (!tv) return;
     const unsubscribe = subscribeEventsForTV(tv.id, (updatedEvents) => {
-      const now = new Date();
-      const filteredEvents = updatedEvents.filter((event) => {
-        const end = new Date(event.endDateTime);
-        const start = new Date(event.startDateTime);
-        const inSameWeek = isSameWeek(start, now, { weekStartsOn: 0 });
-        return end >= now || inSameWeek;
-      });
-      setEvents(filteredEvents);
+      // Keep full event history assigned to this TV so mobile weekly navigation
+      // can browse past and future weeks without refetch/reload constraints.
+      setEvents(updatedEvents);
       setFadeKey((k) => k + 1);
     });
     return () => unsubscribe();
@@ -97,7 +91,13 @@ export default function TvPlayer() {
 
   const isRotated =
     effectOrientation === 'vertical-left' || effectOrientation === 'vertical-right'
-  const gridOrientation = isRotated ? 'vertical' : effectOrientation
+  const gridOrientation: GridOrientation = isRotated
+    ? 'vertical'
+    : effectOrientation === 'mobile'
+      ? 'mobile'
+      : effectOrientation === 'vertical'
+        ? 'vertical'
+        : 'horizontal'
 
   const rotateStyle = isRotated
     ? {
@@ -124,7 +124,6 @@ export default function TvPlayer() {
         <AgendaGrid
           events={events}
           orientation={gridOrientation}
-          currentDayOfWeek={dayOfWeek}
         />
         <TvFooter />
       </div>

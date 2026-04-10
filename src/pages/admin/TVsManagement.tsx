@@ -244,6 +244,12 @@ const TVsManagement = () => {
                         Vertical — Girada Direita
                       </div>
                     </SelectItem>
+                    <SelectItem value="mobile">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4" />
+                        Mobile (Seg-Dom)
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -327,6 +333,7 @@ const TVsManagement = () => {
                         vertical: "9:16",
                         "vertical-left": "9:16 ↺",
                         "vertical-right": "9:16 ↻",
+                        mobile: "MOBILE",
                       }[tv.orientation]
                     }
                   </span>

@@ -131,7 +131,15 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <span className="chip chip-muted text-xs py-0.5 capitalize flex-shrink-0 ml-2">
-                      {tv.orientation === 'horizontal' ? '16:9' : '9:16'}
+                      {
+                        {
+                          horizontal: '16:9',
+                          vertical: '9:16',
+                          'vertical-left': '9:16 ↺',
+                          'vertical-right': '9:16 ↻',
+                          mobile: 'MOBILE',
+                        }[tv.orientation]
+                      }
                     </span>
                   </div>
                 ))}

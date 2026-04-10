@@ -1,3 +1,5 @@
+import type { TVOrientation } from "@/types";
+
 export interface TvEvent {
   id: string;
   name: string;
@@ -10,7 +12,7 @@ export interface TvEvent {
 
 export interface TvConfig {
   slug: string;
-  orientation: 'horizontal' | 'vertical';
+  orientation: TVOrientation;
 }
 
 export interface TvData {

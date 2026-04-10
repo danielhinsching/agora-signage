@@ -1,13 +1,16 @@
 import { useClock } from '@/hooks/use-clock.ts';
-import { Maximize, Minimize, Wifi } from 'lucide-react';
+import { Maximize, Minimize } from 'lucide-react';
 import { useState } from 'react';
+import type { TVOrientation } from '@/types';
+
+type GridOrientation = Extract<TVOrientation, 'horizontal' | 'vertical' | 'mobile'>;
 
 interface TvHeaderProps {
-  orientation: 'horizontal' | 'vertical';
+  orientation: GridOrientation;
 }
 
 export function TvHeader({ orientation }: TvHeaderProps) {
-  const { time, date } = useClock();
+  const { time } = useClock();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
@@ -27,11 +30,15 @@ export function TvHeader({ orientation }: TvHeaderProps) {
         alt="Ágora Tech Park"
         className="h-8 w-auto"
       />
-      <div className="flex items-center gap-2 text-center">
-        <span className="font-bold text-gray-900 text-lg">Bem-vindo ao Ágora Tech Park</span>
-      </div>
+      {orientation !== 'mobile' && (
+        <div className="flex items-center gap-2 text-center">
+          <span className="font-bold text-gray-900 text-lg">Bem-vindo ao Ágora Tech Park</span>
+        </div>
+      )}
       <div className="flex items-center gap-6">
-        <div className="text-3xl font-light tabular-nums text-gray-900">{time}</div>
+        {orientation !== 'mobile' && (
+          <div className="text-3xl font-light tabular-nums text-gray-900">{time}</div>
+        )}
         <button
           onClick={toggleFullscreen}
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
