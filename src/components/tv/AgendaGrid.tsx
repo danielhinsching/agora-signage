@@ -1,17 +1,24 @@
-import { useMemo, useState, useEffect, useRef } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, addDays } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { Clock, MapPin } from "lucide-react"
+import { format, addDays, addWeeks, isSameDay, startOfWeek } from "date-fns"
+import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react"
 
 interface AgendaGridProps {
   events: Event[]
-  orientation: "horizontal" | "vertical"
-  currentDayOfWeek: number
+  orientation: "horizontal" | "vertical" | "mobile"
 }
 
 const CAROUSEL_INTERVAL = 5000
+const WEEKDAY_SHORT_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+const MOBILE_WEEK_STARTS_ON = 1
+
+type DayInfo = {
+  date: Date
+  label: string
+  dateLabel: string
+  isToday: boolean
+}
 
 // ─── Shared Event Card (larger typography) ──────────────────────────
 function EventItem({ event }: { event: Event }) {
@@ -106,27 +113,25 @@ function CarouselEvents({
   )
 }
 
-// ─── Build consecutive days starting from today ─────────────────────
-function useConsecutiveDays(numDays: number) {
+// ─── Build consecutive days starting from a given date ──────────────
+function useDaysWindow(startDate: Date, numDays: number) {
   return useMemo(() => {
     const today = new Date()
     return Array.from({ length: numDays }, (_, i) => {
-      const day = addDays(today, i)
+      const day = addDays(startDate, i)
       const dayOfWeek = day.getDay()
-      const shortNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
       return {
         date: day,
-        dayOfWeek,
-        label: shortNames[dayOfWeek],
+        label: WEEKDAY_SHORT_NAMES[dayOfWeek],
         dateLabel: format(day, "dd/MM"),
-        isToday: i === 0,
+        isToday: isSameDay(day, today),
       }
     })
-  }, [numDays])
+  }, [startDate, numDays])
 }
 
 // ─── Group events by date string ────────────────────────────────────
-function useGroupedByDate(events: Event[], days: ReturnType<typeof useConsecutiveDays>) {
+function useGroupedByDate(events: Event[], days: DayInfo[]) {
   return useMemo(() => {
     const map = new Map<string, Event[]>()
     days.forEach((d) => map.set(format(d.date, "yyyy-MM-dd"), []))
@@ -224,20 +229,140 @@ function VerticalDaySection({
   )
 }
 
+// ─── Mobile Day Section (stacked card list) ─────────────────────────
+function MobileDaySection({
+  day,
+  events,
+}: {
+  day: DayInfo
+  events: Event[]
+}) {
+  const maxEventsPerPage = 2
+
+  return (
+    <section
+      className={cn(
+        "rounded-xl border border-[#e6a020]/30 overflow-hidden bg-white",
+        day.isToday && "ring-2 ring-[#c47d00]/60"
+      )}
+    >
+      <div className="px-4 py-3 bg-[#F5A623] border-b-2 border-[#d4911a] flex items-center gap-3">
+        <h3 className="font-black text-lg uppercase tracking-tight text-gray-900">
+          {day.isToday ? "HOJE" : day.label}
+        </h3>
+        <span className="text-gray-800 font-bold text-base">{day.dateLabel}</span>
+      </div>
+
+      {events.length > 0 ? (
+        <div className="h-[220px]">
+          <CarouselEvents
+            events={events}
+            perPage={maxEventsPerPage}
+            containerClassName="bg-white"
+          />
+        </div>
+      ) : (
+        <div className="h-[140px] bg-white flex items-center justify-center">
+          <span className="text-gray-400 text-base">Sem eventos</span>
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── Main Grid ──────────────────────────────────────────────────────
 export function AgendaGrid({
   events,
   orientation,
 }: AgendaGridProps) {
-  const days = useConsecutiveDays(5)
+  const [mobileWeekOffset, setMobileWeekOffset] = useState(0)
+
+  useEffect(() => {
+    if (orientation !== "mobile" && mobileWeekOffset !== 0) {
+      setMobileWeekOffset(0)
+    }
+  }, [orientation, mobileWeekOffset])
+
+  const mobileWeekStart = useMemo(
+    () => startOfWeek(addWeeks(new Date(), mobileWeekOffset), { weekStartsOn: MOBILE_WEEK_STARTS_ON }),
+    [mobileWeekOffset]
+  )
+
+  const windowStartDate = useMemo(
+    () => (orientation === "mobile" ? mobileWeekStart : new Date()),
+    [orientation, mobileWeekStart]
+  )
+
+  const dayCount = orientation === "mobile" ? 7 : 5
+  const days = useDaysWindow(windowStartDate, dayCount)
   const grouped = useGroupedByDate(events, days)
 
-  if (events.length === 0) {
+  if (events.length === 0 && orientation !== "mobile") {
     return (
       <div className="flex-1 bg-[#F5A623] flex items-center justify-center p-8">
         <p className="text-gray-900 text-3xl font-bold">
           Nenhum evento programado
         </p>
+      </div>
+    )
+  }
+
+  // ─── Mobile orientation (fixed week Mon-Sun, with week navigation) ─
+  if (orientation === "mobile") {
+    const weekRangeLabel = `${days[0]?.dateLabel} a ${days[days.length - 1]?.dateLabel}`
+
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#fff8ef]">
+        <div className="px-3 py-3 bg-[#F5A623] border-b-2 border-[#d4911a]">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              className="h-10 w-10 rounded-lg bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
+              onClick={() => setMobileWeekOffset((prev) => prev - 1)}
+              aria-label="Semana anterior"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div className="text-center min-w-0 px-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#7c4f00]">
+                Agenda Mobile
+              </p>
+              <h2 className="text-lg font-black text-gray-900">Semana Seg-Dom</h2>
+              <p className="text-sm font-semibold text-gray-800">{weekRangeLabel}</p>
+            </div>
+
+            <button
+              type="button"
+              className="h-10 w-10 rounded-lg bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
+              onClick={() => setMobileWeekOffset((prev) => prev + 1)}
+              aria-label="Próxima semana"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-md bg-[#c47d00] text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => setMobileWeekOffset(0)}
+              disabled={mobileWeekOffset === 0}
+            >
+              Semana Atual
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          {days.map((day) => (
+            <MobileDaySection
+              key={format(day.date, "yyyy-MM-dd")}
+              day={day}
+              events={grouped.get(format(day.date, "yyyy-MM-dd")) || []}
+            />
+          ))}
+        </div>
       </div>
     )
   }

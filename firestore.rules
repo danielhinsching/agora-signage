@@ -7,11 +7,16 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    function isValidTVOrientation(orientation) {
+      return orientation in ['horizontal', 'vertical', 'vertical-left', 'vertical-right', 'mobile'];
+    }
     
     // Coleção de TVs - leitura pública (para exibição), escrita apenas autenticada
     match /tvs/{tvId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidTVOrientation(request.resource.data.orientation);
+      allow delete: if isAuthenticated();
     }
     
     // Coleção de Eventos - leitura pública (para exibição), escrita apenas autenticada

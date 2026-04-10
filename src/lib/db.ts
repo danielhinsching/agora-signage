@@ -17,7 +17,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { TV, Event, Local } from '@/types';
+import { TV, Event, Local, TVOrientation } from '@/types';
 
 // Collection names
 export const COLLECTIONS = {
@@ -26,6 +26,21 @@ export const COLLECTIONS = {
   LOCAIS: 'locais',
   USERS: 'users',
 } as const;
+
+const ALLOWED_TV_ORIENTATIONS: TVOrientation[] = [
+  'horizontal',
+  'vertical',
+  'vertical-left',
+  'vertical-right',
+  'mobile',
+];
+
+function normalizeTVOrientation(value: unknown): TVOrientation {
+  if (typeof value === 'string' && ALLOWED_TV_ORIENTATIONS.includes(value as TVOrientation)) {
+    return value as TVOrientation;
+  }
+  return 'horizontal';
+}
 
 // ============== TV Operations ==============
 
@@ -190,7 +205,7 @@ function convertDocToTV(id: string, data: DocumentData): TV {
     id,
     name: data.name,
     slug: data.slug,
-    orientation: data.orientation,
+    orientation: normalizeTVOrientation(data.orientation),
     createdAt: convertTimestamp(data.createdAt),
   };
 }
