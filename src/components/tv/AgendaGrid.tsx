@@ -1,8 +1,9 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
 import { format, addDays, addWeeks, isSameDay, startOfWeek } from "date-fns"
-import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, Download, QrCode } from "lucide-react"
+import { QRCodeCanvas } from "qrcode.react"
 
 interface AgendaGridProps {
   events: Event[]
