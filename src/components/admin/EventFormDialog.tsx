@@ -146,7 +146,7 @@ export function EventFormDialog({
   }) => ({
     ...value,
     startDateTime: value.startDateTime ? new Date(value.startDateTime) : undefined,
-    endDateTime: value.endDateTime ? value.endDateTime.toISOString() : undefined, // Quick fix, next line is better
+    endDateTime: value.endDateTime ? new Date(value.endDateTime) : undefined,
   }), []);
 
   const { formData, setFormData, hasUnsavedChanges, clearDraft, discardChanges } = usePersistentForm({
@@ -154,11 +154,7 @@ export function EventFormDialog({
     initialValue: initialFormData,
     isOpen: open,
     serialize: serializeEventDraft,
-    deserialize: (v: any) => ({
-        ...v,
-        startDateTime: v.startDateTime ? new Date(v.startDateTime) : undefined,
-        endDateTime: v.endDateTime ? new Date(v.endDateTime) : undefined,
-    }),
+    deserialize: deserializeEventDraft,
   });
 
   const isMultiDayDetected = formData.startDateTime && formData.endDateTime && 
