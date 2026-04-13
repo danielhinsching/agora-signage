@@ -10,6 +10,33 @@ interface AgendaGridProps {
   orientation: "horizontal" | "vertical" | "mobile"
 }
 
+// ─── Mobile-optimized Event Card ────────────────────────────────────
+function MobileEventItem({ event }: { event: Event }) {
+  const upperName = event.name.toLocaleUpperCase("pt-BR")
+  const upperLocation = event.location?.toLocaleUpperCase("pt-BR")
+
+  return (
+    <div className="border-b border-[#E6A020]/20 px-3 py-2.5 flex flex-col justify-center overflow-hidden">
+      <p className="font-bold text-gray-900 text-sm leading-snug mb-1 line-clamp-2">
+        {upperName}
+      </p>
+      <div className="flex items-center gap-2 text-gray-600 text-xs flex-wrap">
+        <Clock className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
+        <span className="font-semibold">
+          {format(new Date(event.startDateTime), "HH:mm")} – {format(new Date(event.endDateTime), "HH:mm")}
+        </span>
+        {event.location && (
+          <>
+            <span className="text-[#d4911a]">·</span>
+            <MapPin className="w-3.5 h-3.5 text-[#F5A623] flex-shrink-0" />
+            <span className="truncate min-w-0 max-w-[120px]">{upperLocation}</span>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const CAROUSEL_INTERVAL = 5000
 const WEEKDAY_SHORT_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 const MOBILE_WEEK_STARTS_ON = 1
@@ -55,10 +82,12 @@ function CarouselEvents({
   events,
   perPage,
   containerClassName,
+  mobile = false,
 }: {
   events: Event[]
   perPage: number
   containerClassName?: string
+  mobile?: boolean
 }) {
   const [page, setPage] = useState(0)
   const [animating, setAnimating] = useState(false)
@@ -82,6 +111,7 @@ function CarouselEvents({
   }, [totalPages])
 
   const visible = events.slice(page * perPage, page * perPage + perPage)
+  const ItemComponent = mobile ? MobileEventItem : EventItem
 
   return (
     <div className={cn("flex-1 overflow-hidden relative", containerClassName)}>
@@ -94,11 +124,11 @@ function CarouselEvents({
         }}
       >
         {visible.map((e) => (
-          <EventItem key={e.id} event={e} />
+          <ItemComponent key={e.id} event={e} />
         ))}
       </div>
       {totalPages > 1 && (
-        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+        <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <div
               key={i}
@@ -238,33 +268,34 @@ function MobileDaySection({
   day: DayInfo
   events: Event[]
 }) {
-  const maxEventsPerPage = 2
+  const maxEventsPerPage = 3
 
   return (
     <section
       className={cn(
-        "rounded-xl border border-[#e6a020]/30 overflow-hidden bg-white",
-        day.isToday && "ring-2 ring-[#c47d00]/60"
+        "rounded-lg border border-[#e6a020]/25 overflow-hidden bg-white shadow-sm",
+        day.isToday && "ring-2 ring-[#c47d00]/50"
       )}
     >
-      <div className="px-4 py-3 bg-[#F5A623] border-b-2 border-[#d4911a] flex items-center gap-3">
-        <h3 className="font-black text-lg uppercase tracking-tight text-gray-900">
+      <div className="px-3 py-2 bg-[#F5A623] border-b border-[#d4911a] flex items-center gap-2">
+        <h3 className="font-black text-sm uppercase tracking-tight text-gray-900">
           {day.isToday ? "HOJE" : day.label}
         </h3>
-        <span className="text-gray-800 font-bold text-base">{day.dateLabel}</span>
+        <span className="text-gray-800 font-bold text-xs">{day.dateLabel}</span>
       </div>
 
       {events.length > 0 ? (
-        <div className="h-[220px]">
+        <div className="min-h-[100px]">
           <CarouselEvents
             events={events}
             perPage={maxEventsPerPage}
             containerClassName="bg-white"
+            mobile
           />
         </div>
       ) : (
-        <div className="h-[140px] bg-white flex items-center justify-center">
-          <span className="text-gray-400 text-base">Sem eventos</span>
+        <div className="py-4 bg-white flex items-center justify-center">
+          <span className="text-gray-400 text-xs">Sem eventos</span>
         </div>
       )}
     </section>
@@ -381,39 +412,36 @@ export function AgendaGrid({
 
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-[#fff8ef]">
-        <div className="px-3 py-3 bg-[#F5A623] border-b-2 border-[#d4911a]">
-          <div className="flex items-center justify-between gap-2">
+        <div className="px-3 py-2 bg-[#F5A623] border-b border-[#d4911a]">
+          <div className="flex items-center justify-between gap-1">
             <button
               type="button"
-              className="h-10 w-10 rounded-lg bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
               onClick={() => setMobileWeekOffset((prev) => prev - 1)}
               aria-label="Semana anterior"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <div className="text-center min-w-0 px-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-[#7c4f00]">
-                Agenda Mobile
-              </p>
-              <h2 className="text-lg font-black text-gray-900">Semana Seg-Dom</h2>
-              <p className="text-sm font-semibold text-gray-800">{weekRangeLabel}</p>
+            <div className="text-center min-w-0 px-1">
+              <h2 className="text-sm font-black text-gray-900">Agenda Semanal</h2>
+              <p className="text-xs font-semibold text-gray-800">{weekRangeLabel}</p>
             </div>
 
             <button
               type="button"
-              className="h-10 w-10 rounded-lg bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md bg-white/80 hover:bg-white text-gray-900 flex items-center justify-center transition-colors"
               onClick={() => setMobileWeekOffset((prev) => prev + 1)}
               aria-label="Próxima semana"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="mt-2 flex justify-center gap-2">
+          <div className="mt-1.5 flex justify-center gap-2">
             <button
               type="button"
-              className="px-3 py-1.5 rounded-md bg-[#c47d00] text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-2.5 py-1 rounded-md bg-[#c47d00] text-white text-[10px] font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => setMobileWeekOffset(0)}
               disabled={mobileWeekOffset === 0}
             >
