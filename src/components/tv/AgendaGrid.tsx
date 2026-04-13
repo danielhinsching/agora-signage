@@ -343,7 +343,7 @@ export function AgendaGrid({
             </button>
           </div>
 
-          <div className="mt-2 flex justify-center">
+          <div className="mt-2 flex justify-center gap-2">
             <button
               type="button"
               className="px-3 py-1.5 rounded-md bg-[#c47d00] text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
@@ -352,6 +352,7 @@ export function AgendaGrid({
             >
               Semana Atual
             </button>
+            <QrDownloadButton />
           </div>
         </div>
 
