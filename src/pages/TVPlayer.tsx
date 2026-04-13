@@ -33,15 +33,19 @@ export default function TvPlayer() {
     loadTV();
   }, [loadTV]);
 
-  // Subscribe to events for this TV in real-time
+  // Subscribe to events — mobile TVs get ALL events automatically
   useEffect(() => {
     if (!tv) return;
-    const unsubscribe = subscribeEventsForTV(tv.id, (updatedEvents) => {
-      // Keep full event history assigned to this TV so mobile weekly navigation
-      // can browse past and future weeks without refetch/reload constraints.
-      setEvents(updatedEvents);
-      setFadeKey((k) => k + 1);
-    });
+    const isMobile = tv.orientation === 'mobile';
+    const unsubscribe = isMobile
+      ? subscribeEvents((updatedEvents) => {
+          setEvents(updatedEvents);
+          setFadeKey((k) => k + 1);
+        })
+      : subscribeEventsForTV(tv.id, (updatedEvents) => {
+          setEvents(updatedEvents);
+          setFadeKey((k) => k + 1);
+        });
     return () => unsubscribe();
   }, [tv]);
 
