@@ -1,8 +1,9 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
 import { format, addDays, addWeeks, isSameDay, startOfWeek } from "date-fns"
-import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, Download, QrCode } from "lucide-react"
+import { QRCodeCanvas } from "qrcode.react"
 
 interface AgendaGridProps {
   events: Event[]
@@ -270,6 +271,73 @@ function MobileDaySection({
   )
 }
 
+// ─── QR Code Download Button ────────────────────────────────────────
+function QrDownloadButton() {
+  const qrRef = useRef<HTMLDivElement>(null)
+  const [showQr, setShowQr] = useState(false)
+  const currentUrl = window.location.href
+
+  const handleDownload = useCallback(() => {
+    const canvas = qrRef.current?.querySelector("canvas")
+    if (!canvas) return
+    const link = document.createElement("a")
+    link.download = "agenda-qrcode.png"
+    link.href = canvas.toDataURL("image/png")
+    link.click()
+  }, [])
+
+  return (
+    <>
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-md bg-[#c47d00] text-white text-xs font-semibold flex items-center gap-1.5"
+        onClick={() => setShowQr(true)}
+      >
+        <QrCode className="w-3.5 h-3.5" />
+        QR Code
+      </button>
+
+      {showQr && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setShowQr(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4 max-w-xs w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-black text-lg text-gray-900">Agenda Ágora</h3>
+            <p className="text-sm text-gray-500 text-center">
+              Escaneie o QR Code para acessar a agenda no celular
+            </p>
+            <div ref={qrRef} className="p-3 bg-white rounded-xl border border-gray-200">
+              <QRCodeCanvas value={currentUrl} size={200} level="H" />
+            </div>
+            <p className="text-[10px] text-gray-400 break-all text-center max-w-full">{currentUrl}</p>
+            <div className="flex gap-2 w-full">
+              <button
+                type="button"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-[#F5A623] text-gray-900 font-bold text-sm flex items-center justify-center gap-2"
+                onClick={handleDownload}
+              >
+                <Download className="w-4 h-4" />
+                Baixar PNG
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2.5 rounded-lg bg-gray-100 text-gray-700 font-semibold text-sm"
+                onClick={() => setShowQr(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Main Grid ──────────────────────────────────────────────────────
 export function AgendaGrid({
   events,
@@ -342,7 +410,7 @@ export function AgendaGrid({
             </button>
           </div>
 
-          <div className="mt-2 flex justify-center">
+          <div className="mt-2 flex justify-center gap-2">
             <button
               type="button"
               className="px-3 py-1.5 rounded-md bg-[#c47d00] text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
@@ -351,6 +419,7 @@ export function AgendaGrid({
             >
               Semana Atual
             </button>
+            <QrDownloadButton />
           </div>
         </div>
 
