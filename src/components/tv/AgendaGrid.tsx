@@ -161,15 +161,29 @@ function useDaysWindow(startDate: Date, numDays: number) {
   }, [startDate, numDays])
 }
 
-// ─── Group events by date string ────────────────────────────────────
+// ─── Group events by date string (multi-day events appear on each day) ──
 function useGroupedByDate(events: Event[], days: DayInfo[]) {
   return useMemo(() => {
     const map = new Map<string, Event[]>()
     days.forEach((d) => map.set(format(d.date, "yyyy-MM-dd"), []))
 
     events.forEach((event) => {
-      const key = format(new Date(event.startDateTime), "yyyy-MM-dd")
-      if (map.has(key)) map.get(key)!.push(event)
+      const eventStart = new Date(event.startDateTime)
+      const eventEnd = new Date(event.endDateTime)
+
+      // Check each visible day — if the event spans that day, include it
+      days.forEach((d) => {
+        const dayKey = format(d.date, "yyyy-MM-dd")
+        const dayStart = new Date(d.date)
+        dayStart.setHours(0, 0, 0, 0)
+        const dayEnd = new Date(d.date)
+        dayEnd.setHours(23, 59, 59, 999)
+
+        // Event overlaps this day if it starts before day ends AND ends after day starts
+        if (eventStart <= dayEnd && eventEnd >= dayStart) {
+          map.get(dayKey)!.push(event)
+        }
+      })
     })
 
     map.forEach((dayEvents) => {
