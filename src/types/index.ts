@@ -19,6 +19,7 @@ export interface Event {
   tvIds: string[]; // Array of TV IDs where this event should be displayed
   tags: string[]; // Professional areas/categories
   createdAt: string;
+  groupId?: string; // ID to link multiple days of the same event
 }
 
 export interface Local {

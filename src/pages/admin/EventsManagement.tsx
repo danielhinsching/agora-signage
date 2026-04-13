@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Plus, Trash2, Edit, MapPin, Clock, Tv, List, CalendarDays } from 'lucide-react';
+import { Calendar, Plus, Trash2, Edit, MapPin, Clock, Tv, List, CalendarDays, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -51,48 +51,99 @@ const getLocationColor = (location: string): string => {
 const EventsManagement = () => {
   const { events, loading, addEvent, updateEvent, deleteEvent } = useEvents();
   const { tvs } = useTVs();
+  
+  // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingSeries, setEditingSeries] = useState<Event[] | null>(null);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>(undefined);
+
+  // Intercept States (when clicking edit/delete on a series)
+  const [editIntercept, setEditIntercept] = useState<Event | null>(null);
+  const [deleteIntercept, setDeleteIntercept] = useState<Event | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const handleOpenCreate = (date?: Date) => {
     setEditingEvent(null);
+    setEditingSeries(null);
     setDefaultDate(date);
     setIsDialogOpen(true);
   };
 
-  const handleOpenEdit = (event: Event) => {
-    setEditingEvent(event);
+  const proceedWithEdit = (event: Event, type: 'single' | 'series') => {
+    setEditIntercept(null);
     setDefaultDate(undefined);
+    if (type === 'single') {
+        setEditingSeries(null);
+        setEditingEvent(event);
+    } else {
+        const series = events.filter(e => e.groupId === event.groupId);
+        setEditingSeries(series);
+        setEditingEvent(null);
+    }
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (eventData: Omit<Event, 'id' | 'createdAt'>) => {
+  const handleOpenEdit = (event: Event) => {
+    if (event.groupId) {
+        setEditIntercept(event);
+    } else {
+        proceedWithEdit(event, 'single');
+    }
+  };
+
+  const handleSubmit = async (eventData: Omit<Event, 'id' | 'createdAt'> | Omit<Event, 'id' | 'createdAt'>[]) => {
+    setIsDialogOpen(false);
     try {
-      if (editingEvent) {
-        await updateEvent(editingEvent.id, eventData);
+      if (Array.isArray(eventData)) {
+          // It's a series submission
+          const groupId = editingSeries?.[0]?.groupId || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10));
+          
+          if (editingSeries) {
+              // Delete old events in series
+              await Promise.all(editingSeries.map(e => deleteEvent(e.id)));
+          }
+          
+          // Create new ones
+          await Promise.all(eventData.map(data => addEvent({ ...data, groupId })));
+          
       } else {
-        await addEvent(eventData);
+        if (editingEvent) {
+          await updateEvent(editingEvent.id, eventData);
+        } else {
+          await addEvent(eventData);
+        }
       }
       setEditingEvent(null);
+      setEditingSeries(null);
       setDefaultDate(undefined);
     } catch (error) {
       console.error('Error saving event:', error);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const executeDelete = async (type: 'single' | 'series', eventId: string, groupId?: string) => {
+    setDeleteIntercept(null);
+    setDeleteConfirm(null);
     try {
-      await deleteEvent(id);
-      setDeleteConfirm(null);
+      if (type === 'series' && groupId) {
+         const series = events.filter(e => e.groupId === groupId);
+         await Promise.all(series.map(e => deleteEvent(e.id)));
+      } else {
+         await deleteEvent(eventId);
+      }
     } catch (error) {
       console.error('Error deleting event:', error);
     }
   };
 
   const handleDeleteRequest = (eventId: string) => {
-    setDeleteConfirm(eventId);
+    const event = events.find(e => e.id === eventId);
+    if (event && event.groupId) {
+        setDeleteIntercept(event);
+    } else {
+        setDeleteConfirm(eventId);
+    }
   };
 
   const getEventStatus = (event: Event) => {
@@ -201,13 +252,16 @@ const EventsManagement = () => {
 
                     return (
                       <TableRow
-                        key={event.id}
-                        className="border-border/30 hover:bg-muted/30 fade-in-up"
-                        style={{ animationDelay: `${index * 0.05}s` }}
+                         key={event.id}
+                         className={`border-border/30 hover:bg-muted/30 fade-in-up ${event.groupId ? 'bg-primary/5' : ''}`}
+                         style={{ animationDelay: `${index * 0.05}s` }}
                       >
                         <TableCell className="font-medium">
                           <div>
-                            <p className="truncate max-w-[200px]">{event.name}</p>
+                            <p className="truncate max-w-[200px] flex items-center gap-1.5">
+                                {event.groupId && <RefreshCw className="w-3 h-3 text-primary opacity-70" title="Evento de Série" />}
+                                {event.name}
+                            </p>
                             <p className="text-xs text-muted-foreground sm:hidden">{event.location}</p>
                           </div>
                         </TableCell>
@@ -259,7 +313,7 @@ const EventsManagement = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => setDeleteConfirm(event.id)}
+                              onClick={() => handleDeleteRequest(event.id)}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -276,16 +330,62 @@ const EventsManagement = () => {
       </Tabs>
 
       {/* Event Form Dialog */}
-      <EventFormDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        editingEvent={editingEvent}
-        tvs={tvs}
-        onSubmit={handleSubmit}
-        defaultDate={defaultDate}
-      />
+      {isDialogOpen && (
+          <EventFormDialog
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            editingEvent={editingEvent}
+            seriesEvents={editingSeries || undefined}
+            tvs={tvs}
+            onSubmit={handleSubmit}
+            defaultDate={defaultDate}
+          />
+      )}
 
-      {/* Delete Confirmation */}
+      {/* Intercept Edit Series */}
+      <AlertDialog open={!!editIntercept} onOpenChange={(open) => !open && setEditIntercept(null)}>
+        <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar Evento Existente em uma Série</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este evento faz parte de uma sequência (múltiplos dias). O que você gostaria de modificar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-start">
+            <Button variant="outline" className="flex-1" onClick={() => editIntercept && proceedWithEdit(editIntercept, 'single')}>
+               Apenas este dia
+            </Button>
+            <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={() => editIntercept && proceedWithEdit(editIntercept, 'series')}>
+               Série inteira
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Intercept Delete Series */}
+      <AlertDialog open={!!deleteIntercept} onOpenChange={(open) => !open && setDeleteIntercept(null)}>
+        <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
+          <AlertDialogHeader>
+             <AlertDialogTitle>Excluir Evento Múltiplo</AlertDialogTitle>
+             <AlertDialogDescription>
+                 Este evento faz parte de uma série. Deseja remover apenas a ocorrência deste dia ou excluir toda a série simultaneamente?
+             </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-start gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteIntercept(null)}>
+               Cancelar
+            </Button>
+             <Button variant="destructive" className="flex-1 bg-destructive/80 hover:bg-destructive" onClick={() => deleteIntercept && executeDelete('single', deleteIntercept.id)}>
+               Apenas este evento
+             </Button>
+             <Button variant="destructive" className="flex-1" onClick={() => deleteIntercept && executeDelete('series', deleteIntercept.id, deleteIntercept.groupId)}>
+               Toda a série
+             </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Simple Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent className="glass-card-strong border-border mx-4 sm:mx-auto">
           <AlertDialogHeader>
@@ -297,10 +397,10 @@ const EventsManagement = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              onClick={() => deleteConfirm && executeDelete('single', deleteConfirm)}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Excluir
+               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
