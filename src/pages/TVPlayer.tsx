@@ -5,7 +5,7 @@ import { TvHeader } from '@/components/tv/TvHeader.tsx';
 import { TvFooter } from '@/components/tv/TvFooter.tsx';
 import { AgendaGrid } from '@/components/tv/AgendaGrid.tsx';
 import { useScreenOrientation } from "@/hooks/use-screen-orientation.ts";
-import { getTVBySlug, subscribeEventsForTV } from '@/lib/db';
+import { getTVBySlug, subscribeEventsForTV, subscribeEvents } from '@/lib/db';
 
 type GridOrientation = 'horizontal' | 'vertical' | 'mobile';
 
