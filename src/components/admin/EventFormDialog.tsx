@@ -33,14 +33,14 @@ import {
 import { Tv, X, Plus, CheckSquare, Tag, MapPin, Building2, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { DateTimePicker } from "./DateTimePicker";
-import { format, addDays, startOfDay, isSameDay } from "date-fns";
+import { format, addDays, startOfDay, isSameDay, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface EventFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingEvent: Event | null;
-  seriesEvents?: Event[]; // Passado caso o usuário queira editar toda a série
+  seriesEvents?: Event[];
   tvs: TV[];
   onSubmit: (eventData: Omit<Event, "id" | "createdAt"> | Omit<Event, "id" | "createdAt">[]) => void;
   defaultDate?: Date;
@@ -73,36 +73,38 @@ export function EventFormDialog({
     descricao: "",
   });
 
-  // Multiday State
   const [daySchedules, setDaySchedules] = useState<DaySchedule[]>([]);
   const [applySameTime, setApplySameTime] = useState(true);
 
   const initialFormData = useMemo(() => {
     if (seriesEvents && seriesEvents.length > 0) {
-      const first = seriesEvents.sort((a,b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime())[0];
-      const last = seriesEvents.sort((a,b) => new Date(b.endDateTime).getTime() - new Date(a.endDateTime).getTime())[0];
+      const sortedByStart = [...seriesEvents].sort((a,b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+      const first = sortedByStart[0];
+      const sortedByEnd = [...seriesEvents].sort((a,b) => new Date(b.endDateTime).getTime() - new Date(a.endDateTime).getTime());
+      const last = sortedByEnd[0];
+      
       return {
-        name: first.name,
-        location: first.location,
+        name: first.name || "",
+        location: first.location || "",
         startDateTime: new Date(first.startDateTime),
         endDateTime: new Date(last.endDateTime),
-        tvIds: first.tvIds,
-        tags: first.tags || [],
+        tvIds: Array.isArray(first.tvIds) ? first.tvIds : [],
+        tags: Array.isArray(first.tags) ? first.tags : [],
       };
     }
 
     if (editingEvent) {
       return {
-        name: editingEvent.name,
-        location: editingEvent.location,
+        name: editingEvent.name || "",
+        location: editingEvent.location || "",
         startDateTime: new Date(editingEvent.startDateTime),
         endDateTime: new Date(editingEvent.endDateTime),
-        tvIds: editingEvent.tvIds,
-        tags: editingEvent.tags || [],
+        tvIds: Array.isArray(editingEvent.tvIds) ? editingEvent.tvIds : [],
+        tags: Array.isArray(editingEvent.tags) ? editingEvent.tags : [],
       };
     }
 
-    const startDate = defaultDate ? new Date(defaultDate) : new Date();
+    const startDate = defaultDate && isValid(new Date(defaultDate)) ? new Date(defaultDate) : new Date();
     startDate.setHours(9, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setHours(10, 0, 0, 0);
@@ -123,31 +125,27 @@ export function EventFormDialog({
       ? `form_evento_draft_edit_series_${seriesEvents[0]?.groupId}` 
       : "form_evento_draft_new";
 
-  const serializeEventDraft = useCallback((value: {
-    name: string;
-    location: string;
-    startDateTime: Date | undefined;
-    endDateTime: Date | undefined;
-    tvIds: string[];
-    tags: string[];
-  }) => ({
+  const serializeEventDraft = useCallback((value: any) => ({
     ...value,
-    startDateTime: value.startDateTime ? value.startDateTime.toISOString() : null,
-    endDateTime: value.endDateTime ? value.endDateTime.toISOString() : null,
+    startDateTime: value?.startDateTime && isValid(value.startDateTime) ? value.startDateTime.toISOString() : null,
+    endDateTime: value?.endDateTime && isValid(value.endDateTime) ? value.endDateTime.toISOString() : null,
   }), []);
 
-  const deserializeEventDraft = useCallback((value: {
-    name: string;
-    location: string;
-    startDateTime: string | null;
-    endDateTime: string | null;
-    tvIds: string[];
-    tags: string[];
-  }) => ({
-    ...value,
-    startDateTime: value.startDateTime ? new Date(value.startDateTime) : undefined,
-    endDateTime: value.endDateTime ? new Date(value.endDateTime) : undefined,
-  }), []);
+  const deserializeEventDraft = useCallback((value: any) => {
+    if (!value) return initialFormData;
+    
+    const sDate = value.startDateTime ? new Date(value.startDateTime) : undefined;
+    const eDate = value.endDateTime ? new Date(value.endDateTime) : undefined;
+
+    return {
+      name: value.name || "",
+      location: value.location || "",
+      startDateTime: sDate && isValid(sDate) ? sDate : undefined,
+      endDateTime: eDate && isValid(eDate) ? eDate : undefined,
+      tvIds: Array.isArray(value.tvIds) ? value.tvIds : [],
+      tags: Array.isArray(value.tags) ? value.tags : [],
+    };
+  }, [initialFormData]);
 
   const { formData, setFormData, hasUnsavedChanges, clearDraft, discardChanges } = usePersistentForm({
     storageKey: draftKey,
@@ -157,18 +155,24 @@ export function EventFormDialog({
     deserialize: deserializeEventDraft,
   });
 
-  const isMultiDayDetected = formData.startDateTime && formData.endDateTime && 
+  const validStart = formData?.startDateTime && isValid(formData.startDateTime);
+  const validEnd = formData?.endDateTime && isValid(formData.endDateTime);
+
+  const isMultiDayDetected = validStart && validEnd && 
     !isSameDay(formData.startDateTime, formData.endDateTime) && !editingEvent;
 
   const isEditingSeries = !!(seriesEvents && seriesEvents.length > 0);
   const showMultiDayPanel = isMultiDayDetected || isEditingSeries;
 
-  // Initialize/Update day schedules
   useEffect(() => {
-    if (!showMultiDayPanel || !formData.startDateTime || !formData.endDateTime) return;
+    if (!showMultiDayPanel || !validStart || !validEnd) return;
+    
+    // Safety break against too long loops
+    if (!isEditingSeries && Math.abs(formData.endDateTime.getTime() - formData.startDateTime.getTime()) > 1000 * 60 * 60 * 24 * 365) {
+        return; // Prevent huge loops
+    }
 
     if (isEditingSeries && seriesEvents && daySchedules.length === 0) {
-      // Map series events to day schedules
       const mapping = seriesEvents.map((evt, i) => ({
         key: `series-${i}`,
         date: startOfDay(new Date(evt.startDateTime)),
@@ -181,7 +185,6 @@ export function EventFormDialog({
     }
 
     if (!isEditingSeries) {
-      // Auto-generate days
       const days = [];
       let current = startOfDay(formData.startDateTime);
       const end = startOfDay(formData.endDateTime);
@@ -197,7 +200,6 @@ export function EventFormDialog({
             endDay.setDate(endDay.getDate() + 1);
         }
 
-        // Keep existing if already generated for that day
         const existing = daySchedules.find(ds => isSameDay(ds.date, current));
         if (existing) {
           if (applySameTime) {
@@ -217,16 +219,32 @@ export function EventFormDialog({
         current = addDays(current, 1);
         dayIndex++;
       }
-      // only update if not structurally equal to avoid loop
-      if (days.length !== daySchedules.length || !isSameDay(days[0].date, daySchedules[0]?.date) || !isSameDay(days[days.length-1].date, daySchedules[daySchedules.length-1]?.date)) {
+      
+      let structureDiff = days.length !== daySchedules.length;
+      if (!structureDiff && days.length > 0 && daySchedules.length > 0) {
+          if (!isSameDay(days[0].date, daySchedules[0].date) || !isSameDay(days[days.length-1].date, daySchedules[daySchedules.length-1].date)) {
+              structureDiff = true;
+          }
+      }
+
+      if (structureDiff) {
         setDaySchedules(days);
       } else if (applySameTime) {
-         // Force times if same
-         setDaySchedules(days);
+        // Find if time actually changed to avoid loop
+        let timesChanged = false;
+        for (let i = 0; i < days.length; i++) {
+           if (days[i].startDateTime.getTime() !== daySchedules[i]?.startDateTime.getTime() ||
+               days[i].endDateTime.getTime() !== daySchedules[i]?.endDateTime.getTime()) {
+               timesChanged = true;
+               break;
+           }
+        }
+        if (timesChanged) {
+           setDaySchedules(days);
+        }
       }
     }
   }, [formData.startDateTime, formData.endDateTime, isEditingSeries, showMultiDayPanel, applySameTime]);
-
 
   const closeDialog = () => {
     onOpenChange(false);
@@ -277,14 +295,14 @@ export function EventFormDialog({
   const handleTVToggle = (tvId: string) => {
     setFormData((prev: any) => ({
       ...prev,
-      tvIds: prev.tvIds.includes(tvId)
+      tvIds: Array.isArray(prev?.tvIds) ? (prev.tvIds.includes(tvId)
         ? prev.tvIds.filter((id: string) => id !== tvId)
-        : [...prev.tvIds, tvId],
+        : [...prev.tvIds, tvId]) : [tvId],
     }));
   };
 
   const handleSelectAllTVs = () => {
-    const allSelected = formData.tvIds.length === tvs.length;
+    const allSelected = Array.isArray(formData?.tvIds) && formData.tvIds.length === tvs.length;
     setFormData((prev: any) => ({
       ...prev,
       tvIds: allSelected ? [] : tvs.map((tv) => tv.id),
@@ -294,30 +312,30 @@ export function EventFormDialog({
   const handleRemoveTV = (tvId: string) => {
     setFormData((prev: any) => ({
       ...prev,
-      tvIds: prev.tvIds.filter((id: string) => id !== tvId),
+      tvIds: Array.isArray(prev?.tvIds) ? prev.tvIds.filter((id: string) => id !== tvId) : [],
     }));
   };
 
   const handleTagToggle = (tag: string) => {
     setFormData((prev: any) => {
-      if (!prev.tags.includes(tag) && prev.tags.length >= 3) return prev;
+      const prevTags = Array.isArray(prev?.tags) ? prev.tags : [];
+      if (!prevTags.includes(tag) && prevTags.length >= 3) return prev;
       return {
         ...prev,
-        tags: prev.tags.includes(tag)
-          ? prev.tags.filter((t: string) => t !== tag)
-          : [...prev.tags, tag],
+        tags: prevTags.includes(tag)
+          ? prevTags.filter((t: string) => t !== tag)
+          : [...prevTags, tag],
       };
     });
   };
 
-  // Day Schedule Handlers
   const handleDayTimeChange = (index: number, type: 'start' | 'end', timeStr: string) => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     setDaySchedules(prev => {
       const next = [...prev];
       const targetDate = new Date(next[index][type === 'start' ? 'startDateTime' : 'endDateTime']);
       targetDate.setHours(hours, minutes);
-      next[index][type === 'start' ? 'startDateTime' : 'endDateTime'] = targetDate;
+      next[index] = { ...next[index], [type === 'start' ? 'startDateTime' : 'endDateTime']: targetDate };
       
       if (applySameTime) {
          return next.map(schedule => {
@@ -336,7 +354,7 @@ export function EventFormDialog({
   const handleDayToggle = (index: number) => {
     setDaySchedules(prev => {
         const next = [...prev];
-        next[index].enabled = !next[index].enabled;
+        next[index] = { ...next[index], enabled: !next[index].enabled };
         return next;
     });
   };
@@ -345,7 +363,7 @@ export function EventFormDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.startDateTime || !formData.endDateTime) {
+    if (!validStart || !validEnd) {
       toast.error("Selecione a data e hora de início e término.");
       return;
     }
@@ -356,10 +374,10 @@ export function EventFormDialog({
     }
 
     const baseEvent = {
-        name: formData.name,
-        location: formData.location,
-        tvIds: formData.tvIds,
-        tags: formData.tags,
+        name: formData.name || "",
+        location: formData.location || "",
+        tvIds: formData.tvIds || [],
+        tags: formData.tags || [],
     };
 
     if (showMultiDayPanel) {
@@ -402,8 +420,8 @@ export function EventFormDialog({
     closeDialog();
   };
 
-  const selectedTVs = useMemo(() => tvs.filter((tv) => formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
-  const unselectedTVs = useMemo(() => tvs.filter((tv) => !formData.tvIds.includes(tv.id)), [tvs, formData.tvIds]);
+  const selectedTVs = useMemo(() => Array.isArray(formData?.tvIds) ? tvs.filter((tv) => formData.tvIds.includes(tv.id)) : [], [tvs, formData?.tvIds]);
+  const unselectedTVs = useMemo(() => Array.isArray(formData?.tvIds) ? tvs.filter((tv) => !formData.tvIds.includes(tv.id)) : tvs, [tvs, formData?.tvIds]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -417,7 +435,7 @@ export function EventFormDialog({
           <div className="space-y-2">
             <Label className="text-sm font-medium">Nome do Evento</Label>
             <Input
-              value={formData.name}
+              value={formData?.name || ""}
               onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Workshop de Inovação"
               className="bg-input/50 border-border/50 focus:border-primary"
@@ -431,7 +449,7 @@ export function EventFormDialog({
               Local / Sala
             </Label>
             <Select
-              value={formData.location}
+              value={formData?.location || ""}
               onValueChange={(val) => {
                 if (val === "__new__") {
                   setShowNewLocalForm(true);
@@ -453,7 +471,7 @@ export function EventFormDialog({
                     </SelectItem>
                   );
                 })}
-                {formData.location &&
+                {formData?.location &&
                   !locais.some((local) => formatLocalDisplay(local) === formData.location) && (
                   <SelectItem value={formData.location}>
                     {formData.location}
@@ -521,14 +539,14 @@ export function EventFormDialog({
             <Label className="text-sm font-medium flex items-center gap-2">
               <Tag className="w-4 h-4 text-primary" />
               Áreas Profissionais
-              <span className={`text-xs font-normal ml-auto ${formData.tags.length >= 3 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                {formData.tags.length}/3 selecionadas
+              <span className={`text-xs font-normal ml-auto ${(formData?.tags?.length || 0) >= 3 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                {formData?.tags?.length || 0}/3 selecionadas
               </span>
             </Label>
             <div className="flex flex-wrap gap-2">
               {PROFESSIONAL_TAGS.map((tag) => {
-                const isSelected = formData.tags.includes(tag);
-                const isDisabled = !isSelected && formData.tags.length >= 3;
+                const isSelected = Array.isArray(formData?.tags) && formData.tags.includes(tag);
+                const isDisabled = !isSelected && Array.isArray(formData?.tags) && formData.tags.length >= 3;
                 return (
                   <button
                     key={tag}
@@ -554,7 +572,7 @@ export function EventFormDialog({
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                     <DateTimePicker
-                        value={formData.startDateTime}
+                        value={formData?.startDateTime}
                         onChange={(date) =>
                             setFormData((prev: any) => ({
                             ...prev,
@@ -568,7 +586,7 @@ export function EventFormDialog({
                 </div>
                 <div className="flex-1">
                     <DateTimePicker
-                        value={formData.endDateTime}
+                        value={formData?.endDateTime}
                         onChange={(date) => setFormData((prev: any) => ({ ...prev, endDateTime: date }))}
                         label="Data Final do Evento"
                         showPast={!!editingEvent || isEditingSeries}
@@ -608,12 +626,12 @@ export function EventFormDialog({
                            onCheckedChange={() => handleDayToggle(i)}
                          />
                          <div className="w-24 text-sm font-medium capitalize truncate">
-                            {format(schedule.date, 'EEEE, dd', { locale: ptBR })}
+                            {isValid(schedule.date) ? format(schedule.date, 'EEEE, dd', { locale: ptBR }) : 'Inválido'}
                          </div>
                          <div className="flex gap-2 items-center flex-1">
                             <Input 
                                 type="time" 
-                                value={format(schedule.startDateTime, 'HH:mm')} 
+                                value={isValid(schedule.startDateTime) ? format(schedule.startDateTime, 'HH:mm') : ''} 
                                 onChange={(e) => handleDayTimeChange(i, 'start', e.target.value)}
                                 className="h-8 text-sm px-2 w-full"
                                 disabled={!schedule.enabled || (applySameTime && i > 0 && !isEditingSeries)} 
@@ -621,7 +639,7 @@ export function EventFormDialog({
                             <span className="text-muted-foreground text-xs">até</span>
                             <Input 
                                 type="time" 
-                                value={format(schedule.endDateTime, 'HH:mm')} 
+                                value={isValid(schedule.endDateTime) ? format(schedule.endDateTime, 'HH:mm') : ''} 
                                 onChange={(e) => handleDayTimeChange(i, 'end', e.target.value)}
                                 className="h-8 text-sm px-2 w-full"
                                 disabled={!schedule.enabled || (applySameTime && i > 0 && !isEditingSeries)} 
@@ -643,7 +661,7 @@ export function EventFormDialog({
               {tvs.length > 0 && (
                 <Button type="button" variant="ghost" size="sm" onClick={handleSelectAllTVs} className="text-xs text-primary hover:text-primary/80">
                   <CheckSquare className="w-3 h-3 mr-1" />
-                  {formData.tvIds.length === tvs.length ? "Desmarcar Todas" : "Selecionar Todas"}
+                  {Array.isArray(formData?.tvIds) && formData.tvIds.length === tvs.length ? "Desmarcar Todas" : "Selecionar Todas"}
                 </Button>
               )}
             </div>
