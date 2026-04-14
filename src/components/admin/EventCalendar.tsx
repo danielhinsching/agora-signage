@@ -315,7 +315,7 @@ export function EventCalendar({
       </div>
 
       {/* Sidebar - Day Detail */}
-      <div className="lg:w-[340px] glass-card p-5 flex flex-col">
+      <div className="w-full lg:w-[300px] xl:w-[340px] glass-card p-3 sm:p-4 lg:p-5 flex flex-col max-h-[400px] lg:max-h-none">
         <div className="flex items-center justify-between mb-4">
           <div>
             {selectedDate ? (
