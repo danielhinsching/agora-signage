@@ -397,14 +397,24 @@ export function AgendaGrid({
     }
   }, [orientation, mobileWeekOffset])
 
+  // Auto-refresh current date every 60s so TVs update at midnight
+  const [todayKey, setTodayKey] = useState(() => startOfDay(new Date()).getTime())
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = startOfDay(new Date()).getTime()
+      if (now !== todayKey) setTodayKey(now)
+    }, 60_000)
+    return () => clearInterval(interval)
+  }, [todayKey])
+
   const mobileWeekStart = useMemo(
     () => startOfWeek(addWeeks(new Date(), mobileWeekOffset), { weekStartsOn: MOBILE_WEEK_STARTS_ON }),
-    [mobileWeekOffset]
+    [mobileWeekOffset, todayKey]
   )
 
   const windowStartDate = useMemo(
     () => (orientation === "mobile" ? mobileWeekStart : startOfDay(new Date())),
-    [orientation, mobileWeekStart]
+    [orientation, mobileWeekStart, todayKey]
   )
 
   const dayCount = orientation === "mobile" ? 7 : 5

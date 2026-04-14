@@ -446,12 +446,12 @@ export function EventCalendar({
                             Encerrado
                           </span>
                         )}
-                        <button
+                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onDeleteEvent(event.id);
                           }}
-                          className="text-[10px] text-destructive/60 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="mt-1 px-2.5 py-1 rounded-md bg-destructive/15 text-destructive text-xs font-semibold hover:bg-destructive hover:text-white transition-colors border border-destructive/30"
                         >
                           Excluir
                         </button>
