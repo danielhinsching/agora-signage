@@ -130,7 +130,7 @@ export function EventCalendar({
         {/* Header with navigation */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold capitalize">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold capitalize">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </h2>
           </div>
