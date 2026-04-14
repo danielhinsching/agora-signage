@@ -310,12 +310,13 @@ const EventsManagement = () => {
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                              size="sm"
+                              variant="destructive"
+                              className="h-8 px-3 bg-destructive/15 text-destructive border border-destructive/30 hover:bg-destructive hover:text-white"
                               onClick={() => handleDeleteRequest(event.id)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Excluir
                             </Button>
                           </div>
                         </TableCell>
