@@ -298,7 +298,7 @@ export function EventCalendar({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+        <div className="hidden sm:flex items-center gap-4 mt-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-primary" />
             Clique para selecionar
