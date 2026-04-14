@@ -126,7 +126,7 @@ export function EventCalendar({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Calendar Grid */}
-      <div className="flex-1 glass-card p-6">
+      <div className="flex-1 min-w-0 glass-card p-3 sm:p-4 lg:p-6">
         {/* Header with navigation */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
