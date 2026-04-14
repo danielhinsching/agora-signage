@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, addDays, addWeeks, isSameDay, startOfWeek } from "date-fns"
+import { format, addDays, addWeeks, isSameDay, startOfWeek, startOfDay } from "date-fns"
 import { ChevronLeft, ChevronRight, Clock, MapPin, Download, QrCode } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 
@@ -147,9 +147,10 @@ function CarouselEvents({
 // ─── Build consecutive days starting from a given date ──────────────
 function useDaysWindow(startDate: Date, numDays: number) {
   return useMemo(() => {
-    const today = new Date()
+    const today = startOfDay(new Date())
+    const normalizedStart = startOfDay(startDate)
     return Array.from({ length: numDays }, (_, i) => {
-      const day = addDays(startDate, i)
+      const day = addDays(normalizedStart, i)
       const dayOfWeek = day.getDay()
       return {
         date: day,
@@ -402,7 +403,7 @@ export function AgendaGrid({
   )
 
   const windowStartDate = useMemo(
-    () => (orientation === "mobile" ? mobileWeekStart : new Date()),
+    () => (orientation === "mobile" ? mobileWeekStart : startOfDay(new Date())),
     [orientation, mobileWeekStart]
   )
 
