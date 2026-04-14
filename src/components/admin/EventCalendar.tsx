@@ -405,9 +405,9 @@ export function EventCalendar({
                             {format(parseISO(event.startDateTime), 'HH:mm')} -{' '}
                             {format(parseISO(event.endDateTime), 'HH:mm')}
                           </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
                             <MapPin className="w-3 h-3 flex-shrink-0" />
-                            {event.location}
+                            <span className="truncate">{event.location}</span>
                           </p>
                           {eventTVs.length > 0 && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
