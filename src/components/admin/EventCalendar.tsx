@@ -126,11 +126,11 @@ export function EventCalendar({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Calendar Grid */}
-      <div className="flex-1 glass-card p-6">
+      <div className="flex-1 min-w-0 glass-card p-3 sm:p-4 lg:p-6">
         {/* Header with navigation */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold capitalize">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold capitalize">
               {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
             </h2>
           </div>
@@ -298,7 +298,7 @@ export function EventCalendar({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+        <div className="hidden sm:flex items-center gap-4 mt-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-primary" />
             Clique para selecionar
@@ -315,7 +315,7 @@ export function EventCalendar({
       </div>
 
       {/* Sidebar - Day Detail */}
-      <div className="lg:w-[340px] glass-card p-5 flex flex-col">
+      <div className="w-full lg:w-[300px] xl:w-[340px] glass-card p-3 sm:p-4 lg:p-5 flex flex-col max-h-[400px] lg:max-h-none">
         <div className="flex items-center justify-between mb-4">
           <div>
             {selectedDate ? (
