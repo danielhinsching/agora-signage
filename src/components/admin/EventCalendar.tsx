@@ -394,30 +394,30 @@ export function EventCalendar({
                     `}
                     onClick={() => onEditEvent(event)}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0 overflow-hidden text-left">
-                        <h4 className={`font-semibold text-sm ${color.text} break-words whitespace-normal leading-tight mb-1`}>
+                    <div className="grid grid-cols-[1fr_auto] items-start gap-2 w-full max-w-full">
+                      <div className="min-w-0 overflow-hidden text-left">
+                        <h4 className={`font-semibold text-sm ${color.text} truncate pb-0.5`}>
                           {event.name}
                         </h4>
-                        <div className="space-y-1">
+                        <div className="space-y-1 mt-1.5">
                           <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            <Clock className="w-3 h-3 shrink-0" />
                             <span className="truncate">
                               {format(parseISO(event.startDateTime), 'HH:mm')} -{' '}
                               {format(parseISO(event.endDateTime), 'HH:mm')}
                             </span>
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <MapPin className="w-3 h-3 shrink-0" />
                             <span className="truncate">{event.location}</span>
                           </p>
                           {eventTVs.length > 0 && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-                              <Tv className="w-3 h-3 flex-shrink-0" />
-                              <div className="flex flex-wrap gap-1 min-w-0">
+                              <Tv className="w-3 h-3 shrink-0" />
+                              <div className="flex flex-wrap gap-1 min-w-0 overflow-hidden">
                                 {eventTVs.length <= 2 ? (
                                   eventTVs.map((tv) => (
-                                    <span key={tv.id} className="chip chip-primary text-[10px] py-0 px-1.5 truncate max-w-[100px] sm:max-w-[140px]">
+                                    <span key={tv.id} className="chip chip-primary text-[10px] py-0 px-1.5 truncate max-w-[100px]">
                                       {tv.name}
                                     </span>
                                   ))
