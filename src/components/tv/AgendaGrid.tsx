@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { Event } from "@/types"
 import { cn } from "@/lib/utils"
-import { format, addDays, addWeeks, isSameDay, startOfWeek } from "date-fns"
+import { format, addDays, addWeeks, isSameDay, startOfWeek, startOfDay } from "date-fns"
 import { ChevronLeft, ChevronRight, Clock, MapPin, Download, QrCode } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 

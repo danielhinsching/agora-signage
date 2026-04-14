@@ -259,7 +259,7 @@ const EventsManagement = () => {
                         <TableCell className="font-medium">
                           <div>
                             <p className="truncate max-w-[200px] flex items-center gap-1.5">
-                                {event.groupId && <RefreshCw className="w-3 h-3 text-primary opacity-70" title="Evento de Série" />}
+                                {event.groupId && <RefreshCw className="w-3 h-3 text-primary opacity-70" />}
                                 {event.name}
                             </p>
                             <p className="text-xs text-muted-foreground sm:hidden">{event.location}</p>
