@@ -14,16 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      events: {
+        Row: {
+          created_at: string
+          end_date_time: string
+          group_id: string | null
+          id: string
+          location: string
+          name: string
+          start_date_time: string
+          tags: string[]
+          tv_ids: string[]
+        }
+        Insert: {
+          created_at?: string
+          end_date_time: string
+          group_id?: string | null
+          id?: string
+          location: string
+          name: string
+          start_date_time: string
+          tags?: string[]
+          tv_ids?: string[]
+        }
+        Update: {
+          created_at?: string
+          end_date_time?: string
+          group_id?: string | null
+          id?: string
+          location?: string
+          name?: string
+          start_date_time?: string
+          tags?: string[]
+          tv_ids?: string[]
+        }
+        Relationships: []
+      }
+      locais: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          predio: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          predio: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          predio?: string
+        }
+        Relationships: []
+      }
+      tvs: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          orientation: Database["public"]["Enums"]["tv_orientation"]
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          orientation?: Database["public"]["Enums"]["tv_orientation"]
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          orientation?: Database["public"]["Enums"]["tv_orientation"]
+          slug?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      tv_orientation:
+        | "horizontal"
+        | "vertical"
+        | "vertical-left"
+        | "vertical-right"
+        | "mobile"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +266,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      tv_orientation: [
+        "horizontal",
+        "vertical",
+        "vertical-left",
+        "vertical-right",
+        "mobile",
+      ],
+    },
   },
 } as const
