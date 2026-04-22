@@ -1,31 +1,7 @@
-// Firestore Database Services
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  DocumentData,
-  QuerySnapshot,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db } from './firebase';
+// Supabase Database Services
+// Mantém a mesma API que era usada com Firestore para evitar mudanças nos hooks
+import { supabase } from '@/integrations/supabase/client';
 import { TV, Event, Local, TVOrientation } from '@/types';
-
-// Collection names
-export const COLLECTIONS = {
-  TVS: 'tvs',
-  EVENTS: 'events',
-  LOCAIS: 'locais',
-  USERS: 'users',
-} as const;
 
 const ALLOWED_TV_ORIENTATIONS: TVOrientation[] = [
   'horizontal',
@@ -42,216 +18,313 @@ function normalizeTVOrientation(value: unknown): TVOrientation {
   return 'horizontal';
 }
 
+// ============== Row mappers ==============
+
+interface TVRow {
+  id: string;
+  name: string;
+  slug: string;
+  orientation: string;
+  created_at: string;
+}
+
+interface EventRow {
+  id: string;
+  name: string;
+  location: string;
+  start_date_time: string;
+  end_date_time: string;
+  tv_ids: string[] | null;
+  tags: string[] | null;
+  group_id: string | null;
+  created_at: string;
+}
+
+interface LocalRow {
+  id: string;
+  nome: string;
+  predio: string;
+  descricao: string | null;
+  created_at: string;
+}
+
+function mapTV(row: TVRow): TV {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    orientation: normalizeTVOrientation(row.orientation),
+    createdAt: row.created_at,
+  };
+}
+
+function mapEvent(row: EventRow): Event {
+  return {
+    id: row.id,
+    name: row.name,
+    location: row.location,
+    startDateTime: row.start_date_time,
+    endDateTime: row.end_date_time,
+    tvIds: row.tv_ids ?? [],
+    tags: row.tags ?? [],
+    groupId: row.group_id ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+function mapLocal(row: LocalRow): Local {
+  return {
+    id: row.id,
+    nome: row.nome,
+    predio: row.predio,
+    descricao: row.descricao ?? '',
+    createdAt: row.created_at,
+  };
+}
+
 // ============== TV Operations ==============
 
-export async function addTV(tvData: Omit<TV, 'id' | 'createdAt'>) {
-  const docRef = await addDoc(collection(db, COLLECTIONS.TVS), {
-    ...tvData,
-    createdAt: serverTimestamp(),
-  });
-  return docRef.id;
+export async function addTV(tvData: Omit<TV, 'id' | 'createdAt'>): Promise<string> {
+  const { data, error } = await supabase
+    .from('tvs')
+    .insert({
+      name: tvData.name,
+      slug: tvData.slug,
+      orientation: tvData.orientation as TVOrientation,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
 }
 
-export async function updateTV(id: string, updates: Partial<TV>) {
-  const docRef = doc(db, COLLECTIONS.TVS, id);
-  await updateDoc(docRef, updates);
+export async function updateTV(id: string, updates: Partial<TV>): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.slug !== undefined) payload.slug = updates.slug;
+  if (updates.orientation !== undefined) payload.orientation = updates.orientation;
+  const { error } = await supabase.from('tvs').update(payload).eq('id', id);
+  if (error) throw error;
 }
 
-export async function deleteTV(id: string) {
-  const docRef = doc(db, COLLECTIONS.TVS, id);
-  await deleteDoc(docRef);
-}
-
-export async function getTV(id: string): Promise<TV | null> {
-  const docRef = doc(db, COLLECTIONS.TVS, id);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return convertDocToTV(docSnap.id, docSnap.data());
-  }
-  return null;
-}
-
-export async function getAllTVs(): Promise<TV[]> {
-  const querySnapshot = await getDocs(collection(db, COLLECTIONS.TVS));
-  return querySnapshot.docs.map((doc) => convertDocToTV(doc.id, doc.data()));
+export async function deleteTV(id: string): Promise<void> {
+  const { error } = await supabase.from('tvs').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function getTVBySlug(slug: string): Promise<TV | null> {
-  const q = query(collection(db, COLLECTIONS.TVS), where('slug', '==', slug));
-  const querySnapshot = await getDocs(q);
-  
-  if (!querySnapshot.empty) {
-    const doc = querySnapshot.docs[0];
-    return convertDocToTV(doc.id, doc.data());
-  }
-  return null;
+  const { data, error } = await supabase.from('tvs').select('*').eq('slug', slug).maybeSingle();
+  if (error) throw error;
+  return data ? mapTV(data as TVRow) : null;
+}
+
+export async function getAllTVs(): Promise<TV[]> {
+  const { data, error } = await supabase.from('tvs').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as TVRow[]).map(mapTV);
 }
 
 export function subscribeTVs(callback: (tvs: TV[]) => void) {
-  const q = query(collection(db, COLLECTIONS.TVS), orderBy('createdAt', 'desc'));
-  
-  return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-    const tvs = snapshot.docs.map((doc) => convertDocToTV(doc.id, doc.data()));
-    callback(tvs);
-  });
+  let active = true;
+
+  const fetchAll = async () => {
+    const { data, error } = await supabase.from('tvs').select('*').order('created_at', { ascending: false });
+    if (!active) return;
+    if (error) {
+      console.error('subscribeTVs error:', error);
+      callback([]);
+      return;
+    }
+    callback((data as TVRow[]).map(mapTV));
+  };
+
+  fetchAll();
+
+  const channel = supabase
+    .channel('tvs-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tvs' }, fetchAll)
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
+  };
 }
 
 // ============== Event Operations ==============
 
-export async function addEvent(eventData: Omit<Event, 'id' | 'createdAt'>) {
-  const docRef = await addDoc(collection(db, COLLECTIONS.EVENTS), {
-    ...eventData,
-    createdAt: serverTimestamp(),
-  });
-  return docRef.id;
+export async function addEvent(eventData: Omit<Event, 'id' | 'createdAt'>): Promise<string> {
+  const { data, error } = await supabase
+    .from('events')
+    .insert({
+      name: eventData.name,
+      location: eventData.location,
+      start_date_time: eventData.startDateTime,
+      end_date_time: eventData.endDateTime,
+      tv_ids: eventData.tvIds ?? [],
+      tags: eventData.tags ?? [],
+      group_id: eventData.groupId ?? null,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
 }
 
-export async function updateEvent(id: string, updates: Partial<Event>) {
-  const docRef = doc(db, COLLECTIONS.EVENTS, id);
-  await updateDoc(docRef, updates);
+export async function updateEvent(id: string, updates: Partial<Event>): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.location !== undefined) payload.location = updates.location;
+  if (updates.startDateTime !== undefined) payload.start_date_time = updates.startDateTime;
+  if (updates.endDateTime !== undefined) payload.end_date_time = updates.endDateTime;
+  if (updates.tvIds !== undefined) payload.tv_ids = updates.tvIds;
+  if (updates.tags !== undefined) payload.tags = updates.tags;
+  if (updates.groupId !== undefined) payload.group_id = updates.groupId ?? null;
+  const { error } = await supabase.from('events').update(payload).eq('id', id);
+  if (error) throw error;
 }
 
-export async function deleteEvent(id: string) {
-  const docRef = doc(db, COLLECTIONS.EVENTS, id);
-  await deleteDoc(docRef);
-}
-
-export async function getEvent(id: string): Promise<Event | null> {
-  const docRef = doc(db, COLLECTIONS.EVENTS, id);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return convertDocToEvent(docSnap.id, docSnap.data());
-  }
-  return null;
+export async function deleteEvent(id: string): Promise<void> {
+  const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function getAllEvents(): Promise<Event[]> {
-  const querySnapshot = await getDocs(collection(db, COLLECTIONS.EVENTS));
-  return querySnapshot.docs.map((doc) => convertDocToEvent(doc.id, doc.data()));
+  const { data, error } = await supabase.from('events').select('*').order('start_date_time', { ascending: true });
+  if (error) throw error;
+  return (data as EventRow[]).map(mapEvent);
 }
 
 export async function getEventsForTV(tvId: string): Promise<Event[]> {
-  const q = query(
-    collection(db, COLLECTIONS.EVENTS),
-    where('tvIds', 'array-contains', tvId),
-    orderBy('startDateTime', 'asc')
-  );
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => convertDocToEvent(doc.id, doc.data()));
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .contains('tv_ids', [tvId])
+    .order('start_date_time', { ascending: true });
+  if (error) throw error;
+  return (data as EventRow[]).map(mapEvent);
 }
 
 export function subscribeEvents(callback: (events: Event[]) => void) {
-  const q = query(collection(db, COLLECTIONS.EVENTS), orderBy('startDateTime', 'asc'));
-  
-  return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-    const events = snapshot.docs.map((doc) => convertDocToEvent(doc.id, doc.data()));
-    callback(events);
-  });
+  let active = true;
+
+  const fetchAll = async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('start_date_time', { ascending: true });
+    if (!active) return;
+    if (error) {
+      console.error('subscribeEvents error:', error);
+      callback([]);
+      return;
+    }
+    callback((data as EventRow[]).map(mapEvent));
+  };
+
+  fetchAll();
+
+  const channel = supabase
+    .channel('events-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchAll)
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
+  };
 }
 
 export function subscribeEventsForTV(tvId: string, callback: (events: Event[]) => void) {
-  const q = query(
-    collection(db, COLLECTIONS.EVENTS),
-    where('tvIds', 'array-contains', tvId)
-  );
-  
-  return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-    const events = snapshot.docs.map((doc) => convertDocToEvent(doc.id, doc.data()))
-      .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
-    callback(events);
-  });
+  let active = true;
+
+  const fetchAll = async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .contains('tv_ids', [tvId])
+      .order('start_date_time', { ascending: true });
+    if (!active) return;
+    if (error) {
+      console.error('subscribeEventsForTV error:', error);
+      callback([]);
+      return;
+    }
+    callback((data as EventRow[]).map(mapEvent));
+  };
+
+  fetchAll();
+
+  const channel = supabase
+    .channel(`events-tv-${tvId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchAll)
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
+  };
 }
 
 // ============== Locais Operations ==============
 
-export async function addLocal(localData: Omit<Local, 'id' | 'createdAt'>) {
-  const docRef = await addDoc(collection(db, COLLECTIONS.LOCAIS), {
-    ...localData,
-    createdAt: serverTimestamp(),
-  });
-  return docRef.id;
+export async function addLocal(localData: Omit<Local, 'id' | 'createdAt'>): Promise<string> {
+  const { data, error } = await supabase
+    .from('locais')
+    .insert({
+      nome: localData.nome,
+      predio: localData.predio,
+      descricao: localData.descricao ?? '',
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
 }
 
-export async function updateLocal(id: string, updates: Partial<Local>) {
-  const docRef = doc(db, COLLECTIONS.LOCAIS, id);
-  await updateDoc(docRef, updates);
+export async function updateLocal(id: string, updates: Partial<Local>): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.nome !== undefined) payload.nome = updates.nome;
+  if (updates.predio !== undefined) payload.predio = updates.predio;
+  if (updates.descricao !== undefined) payload.descricao = updates.descricao;
+  const { error } = await supabase.from('locais').update(payload).eq('id', id);
+  if (error) throw error;
 }
 
-export async function deleteLocal(id: string) {
-  const docRef = doc(db, COLLECTIONS.LOCAIS, id);
-  await deleteDoc(docRef);
+export async function deleteLocal(id: string): Promise<void> {
+  const { error } = await supabase.from('locais').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function getAllLocais(): Promise<Local[]> {
-  const querySnapshot = await getDocs(collection(db, COLLECTIONS.LOCAIS));
-  return querySnapshot.docs.map((doc) => convertDocToLocal(doc.id, doc.data()));
+  const { data, error } = await supabase.from('locais').select('*').order('nome', { ascending: true });
+  if (error) throw error;
+  return (data as LocalRow[]).map(mapLocal);
 }
 
 export function subscribeLocais(callback: (locais: Local[]) => void) {
-  const q = query(collection(db, COLLECTIONS.LOCAIS), orderBy('nome', 'asc'));
+  let active = true;
 
-  return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-    const locais = snapshot.docs.map((doc) => convertDocToLocal(doc.id, doc.data()));
-    callback(locais);
-  });
-}
-
-// ============== Helper Functions ==============
-
-function convertDocToTV(id: string, data: DocumentData): TV {
-  return {
-    id,
-    name: data.name,
-    slug: data.slug,
-    orientation: normalizeTVOrientation(data.orientation),
-    createdAt: convertTimestamp(data.createdAt),
+  const fetchAll = async () => {
+    const { data, error } = await supabase.from('locais').select('*').order('nome', { ascending: true });
+    if (!active) return;
+    if (error) {
+      console.error('subscribeLocais error:', error);
+      callback([]);
+      return;
+    }
+    callback((data as LocalRow[]).map(mapLocal));
   };
-}
 
-function convertDocToEvent(id: string, data: DocumentData): Event {
-  return {
-    id,
-    name: data.name,
-    location: data.location,
-    startDateTime: data.startDateTime,
-    endDateTime: data.endDateTime,
-    tvIds: data.tvIds || [],
-    tags: data.tags || [],
-    createdAt: convertTimestamp(data.createdAt),
+  fetchAll();
+
+  const channel = supabase
+    .channel('locais-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'locais' }, fetchAll)
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
   };
-}
-
-function convertDocToLocal(id: string, data: DocumentData): Local {
-  return {
-    id,
-    nome: data.nome,
-    predio: data.predio,
-    descricao: data.descricao || '',
-    createdAt: convertTimestamp(data.createdAt),
-  };
-}
-
-function convertTimestamp(timestamp: unknown): string {
-  if (!timestamp) return new Date().toISOString();
-  if (timestamp instanceof Timestamp) {
-    return timestamp.toDate().toISOString();
-  }
-  if (
-    typeof timestamp === 'object' &&
-    timestamp !== null &&
-    'toDate' in timestamp &&
-    typeof (timestamp as { toDate: unknown }).toDate === 'function'
-  ) {
-    const converter = timestamp as { toDate: () => Date };
-    return converter.toDate().toISOString();
-  }
-  if (typeof timestamp === 'string' || typeof timestamp === 'number') {
-    return new Date(timestamp).toISOString();
-  }
-  if (timestamp instanceof Date) {
-    return timestamp.toISOString();
-  }
-  return new Date().toISOString();
 }
