@@ -99,7 +99,7 @@ export async function addTV(tvData: Omit<TV, 'id' | 'createdAt'>): Promise<strin
 }
 
 export async function updateTV(id: string, updates: Partial<TV>): Promise<void> {
-  const payload: Record<string, unknown> = {};
+  const payload: { name?: string; slug?: string; orientation?: TVOrientation } = {};
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.slug !== undefined) payload.slug = updates.slug;
   if (updates.orientation !== undefined) payload.orientation = updates.orientation;
