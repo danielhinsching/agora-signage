@@ -172,7 +172,15 @@ export async function addEvent(eventData: Omit<Event, 'id' | 'createdAt'>): Prom
 }
 
 export async function updateEvent(id: string, updates: Partial<Event>): Promise<void> {
-  const payload: Record<string, unknown> = {};
+  const payload: {
+    name?: string;
+    location?: string;
+    start_date_time?: string;
+    end_date_time?: string;
+    tv_ids?: string[];
+    tags?: string[];
+    group_id?: string | null;
+  } = {};
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.location !== undefined) payload.location = updates.location;
   if (updates.startDateTime !== undefined) payload.start_date_time = updates.startDateTime;
@@ -283,7 +291,7 @@ export async function addLocal(localData: Omit<Local, 'id' | 'createdAt'>): Prom
 }
 
 export async function updateLocal(id: string, updates: Partial<Local>): Promise<void> {
-  const payload: Record<string, unknown> = {};
+  const payload: { nome?: string; predio?: string; descricao?: string } = {};
   if (updates.nome !== undefined) payload.nome = updates.nome;
   if (updates.predio !== undefined) payload.predio = updates.predio;
   if (updates.descricao !== undefined) payload.descricao = updates.descricao;
