@@ -46,11 +46,16 @@ export async function addEmpresa(input: Omit<Empresa, 'id' | 'createdAt'>): Prom
 }
 
 export async function updateEmpresa(id: string, updates: Partial<Omit<Empresa, 'id' | 'createdAt'>>): Promise<void> {
-  const payload: Record<string, unknown> = {};
+  const payload: {
+    nome?: string;
+    descricao?: string;
+    site_url?: string;
+    logo_url?: string | null;
+  } = {};
   if (updates.nome !== undefined) payload.nome = updates.nome;
   if (updates.descricao !== undefined) payload.descricao = updates.descricao;
   if (updates.siteUrl !== undefined) payload.site_url = updates.siteUrl;
-  if (updates.logoUrl !== undefined) payload.logo_url = updates.logoUrl;
+  if (updates.logoUrl !== undefined) payload.logo_url = updates.logoUrl ?? null;
   const { error } = await supabase.from('empresas').update(payload).eq('id', id);
   if (error) throw error;
 }
