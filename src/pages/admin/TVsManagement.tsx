@@ -39,6 +39,11 @@ import {
   ExternalLink,
   Monitor,
   Smartphone,
+  Calendar,
+  Image as ImageIcon,
+  Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,6 +59,7 @@ const TVsManagement = () => {
       name: editingTV?.name ?? "",
       slug: editingTV?.slug ?? "",
       orientation: editingTV?.orientation ?? ("horizontal" as TVOrientation),
+      type: editingTV?.type ?? ("events" as TVType),
     }),
     [editingTV]
   );
@@ -65,6 +71,62 @@ const TVsManagement = () => {
     initialValue: initialFormData,
     isOpen: isDialogOpen,
   });
+
+  // ---- Image gallery management (only when editing an existing image-type TV) ----
+  const [images, setImages] = useState<TvImage[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!isDialogOpen || !editingTV || formData.type !== "images") {
+      setImages([]);
+      return;
+    }
+    setImagesLoading(true);
+    listTvImages(editingTV.id)
+      .then(setImages)
+      .catch((err) => {
+        console.error(err);
+        toast.error("Erro ao carregar imagens");
+      })
+      .finally(() => setImagesLoading(false));
+  }, [isDialogOpen, editingTV, formData.type]);
+
+  const handleUploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !editingTV) return;
+    setUploading(true);
+    try {
+      const uploaded: TvImage[] = [];
+      for (const file of Array.from(files)) {
+        if (!/^image\/(jpe?g|png|webp)$/i.test(file.type)) {
+          toast.error(`Formato não suportado: ${file.name}`);
+          continue;
+        }
+        const img = await uploadTvImage(editingTV.id, file);
+        uploaded.push(img);
+      }
+      if (uploaded.length > 0) {
+        setImages((prev) => [...prev, ...uploaded]);
+        toast.success(`${uploaded.length} imagem(ns) enviada(s)`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async (img: TvImage) => {
+    try {
+      await deleteTvImage(img.path);
+      setImages((prev) => prev.filter((i) => i.path !== img.path));
+      toast.success("Imagem removida");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao remover imagem");
+    }
+  };
 
   const resetForm = () => {
     discardChanges();
