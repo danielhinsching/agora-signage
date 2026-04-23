@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      empresas: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          logo_url: string | null
+          nome: string
+          site_url: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          logo_url?: string | null
+          nome: string
+          site_url: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          site_url?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -81,6 +108,7 @@ export type Database = {
           name: string
           orientation: Database["public"]["Enums"]["tv_orientation"]
           slug: string
+          type: Database["public"]["Enums"]["tv_type"]
         }
         Insert: {
           created_at?: string
@@ -88,6 +116,7 @@ export type Database = {
           name: string
           orientation?: Database["public"]["Enums"]["tv_orientation"]
           slug: string
+          type?: Database["public"]["Enums"]["tv_type"]
         }
         Update: {
           created_at?: string
@@ -95,6 +124,7 @@ export type Database = {
           name?: string
           orientation?: Database["public"]["Enums"]["tv_orientation"]
           slug?: string
+          type?: Database["public"]["Enums"]["tv_type"]
         }
         Relationships: []
       }
@@ -140,6 +170,7 @@ export type Database = {
         | "vertical-left"
         | "vertical-right"
         | "mobile"
+      tv_type: "events" | "images"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -275,6 +306,7 @@ export const Constants = {
         "vertical-right",
         "mobile",
       ],
+      tv_type: ["events", "images"],
     },
   },
 } as const

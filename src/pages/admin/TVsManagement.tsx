@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTVs } from "@/hooks/useTVs";
-import { TV, TVOrientation } from "@/types";
+import { TV, TVOrientation, TVType } from "@/types";
+import { listTvImages, uploadTvImage, deleteTvImage, deleteAllTvImages, TvImage } from "@/lib/tv-images";
 import { usePersistentForm } from "@/hooks/usePersistentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,11 @@ import {
   ExternalLink,
   Monitor,
   Smartphone,
+  Calendar,
+  Image as ImageIcon,
+  Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,6 +59,7 @@ const TVsManagement = () => {
       name: editingTV?.name ?? "",
       slug: editingTV?.slug ?? "",
       orientation: editingTV?.orientation ?? ("horizontal" as TVOrientation),
+      type: editingTV?.type ?? ("events" as TVType),
     }),
     [editingTV]
   );
@@ -64,6 +71,62 @@ const TVsManagement = () => {
     initialValue: initialFormData,
     isOpen: isDialogOpen,
   });
+
+  // ---- Image gallery management (only when editing an existing image-type TV) ----
+  const [images, setImages] = useState<TvImage[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!isDialogOpen || !editingTV || formData.type !== "images") {
+      setImages([]);
+      return;
+    }
+    setImagesLoading(true);
+    listTvImages(editingTV.id)
+      .then(setImages)
+      .catch((err) => {
+        console.error(err);
+        toast.error("Erro ao carregar imagens");
+      })
+      .finally(() => setImagesLoading(false));
+  }, [isDialogOpen, editingTV, formData.type]);
+
+  const handleUploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !editingTV) return;
+    setUploading(true);
+    try {
+      const uploaded: TvImage[] = [];
+      for (const file of Array.from(files)) {
+        if (!/^image\/(jpe?g|png|webp)$/i.test(file.type)) {
+          toast.error(`Formato não suportado: ${file.name}`);
+          continue;
+        }
+        const img = await uploadTvImage(editingTV.id, file);
+        uploaded.push(img);
+      }
+      if (uploaded.length > 0) {
+        setImages((prev) => [...prev, ...uploaded]);
+        toast.success(`${uploaded.length} imagem(ns) enviada(s)`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async (img: TvImage) => {
+    try {
+      await deleteTvImage(img.path);
+      setImages((prev) => prev.filter((i) => i.path !== img.path));
+      toast.success("Imagem removida");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao remover imagem");
+    }
+  };
 
   const resetForm = () => {
     discardChanges();
@@ -134,6 +197,12 @@ const TVsManagement = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Best-effort cleanup of any images attached to this TV
+      try {
+        await deleteAllTvImages(id);
+      } catch (e) {
+        console.warn("Could not clean up images for TV", id, e);
+      }
       await deleteTV(id);
       setDeleteConfirm(null);
     } catch (error) {
@@ -209,6 +278,33 @@ const TVsManagement = () => {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo de TV</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: TVType) =>
+                    setFormData((prev) => ({ ...prev, type: value }))
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="events">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Agenda de Eventos
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="images">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        Galeria de Imagens
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label className="text-sm font-medium">Orientação</Label>
                 <Select
                   value={formData.orientation}
@@ -253,6 +349,80 @@ const TVsManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Image gallery management — only for existing image-type TVs */}
+              {formData.type === "images" && (
+                <div className="space-y-3 pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Galeria de Imagens</Label>
+                    {editingTV && (
+                      <span className="text-xs text-muted-foreground">
+                        {images.length} imagem(ns)
+                      </span>
+                    )}
+                  </div>
+
+                  {!editingTV ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Salve a TV primeiro para enviar imagens.
+                    </p>
+                  ) : (
+                    <>
+                      <label className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors">
+                        {uploading ? (
+                          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                        ) : (
+                          <Upload className="w-6 h-6 text-muted-foreground" />
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {uploading ? "Enviando..." : "Clique para enviar (JPG, PNG, WEBP)"}
+                        </span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          disabled={uploading}
+                          onChange={(e) => {
+                            handleUploadFiles(e.target.files);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+
+                      {imagesLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : images.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto custom-scrollbar">
+                          {images.map((img) => (
+                            <div
+                              key={img.path}
+                              className="relative group aspect-square rounded-md overflow-hidden border border-border/50 bg-muted"
+                            >
+                              <img
+                                src={img.url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(img)}
+                                className="absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                aria-label="Remover imagem"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
@@ -326,17 +496,36 @@ const TVsManagement = () => {
                       </p>
                     </div>
                   </div>
-                  <span className="chip chip-secondary text-xs py-0.5 flex-shrink-0">
-                    {
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span
+                      className={`chip text-xs py-0.5 inline-flex items-center gap-1 ${
+                        tv.type === "images" ? "chip-primary" : "chip-secondary"
+                      }`}
+                    >
+                      {tv.type === "images" ? (
+                        <>
+                          <ImageIcon className="w-3 h-3" />
+                          Imagens
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-3 h-3" />
+                          Eventos
+                        </>
+                      )}
+                    </span>
+                    <span className="chip chip-secondary text-xs py-0.5">
                       {
-                        horizontal: "16:9",
-                        vertical: "9:16",
-                        "vertical-left": "9:16 ↺",
-                        "vertical-right": "9:16 ↻",
-                        mobile: "MOBILE",
-                      }[tv.orientation]
-                    }
-                  </span>
+                        {
+                          horizontal: "16:9",
+                          vertical: "9:16",
+                          "vertical-left": "9:16 ↺",
+                          "vertical-right": "9:16 ↻",
+                          mobile: "MOBILE",
+                        }[tv.orientation]
+                      }
+                    </span>
+                  </div>
                 </div>
 
                 {/* Actions */}

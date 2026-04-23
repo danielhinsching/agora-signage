@@ -2,11 +2,14 @@
 
 export type TVOrientation = 'horizontal' | 'vertical' | 'vertical-left' | 'vertical-right' | 'mobile';
 
+export type TVType = 'events' | 'images';
+
 export interface TV {
   id: string;
   name: string;
   slug: string;
   orientation: TVOrientation;
+  type: TVType;
   createdAt: string;
 }
 
@@ -27,6 +30,15 @@ export interface Local {
   nome: string;
   predio: string;
   descricao?: string;
+  createdAt: string;
+}
+
+export interface Empresa {
+  id: string;
+  nome: string;
+  descricao: string;
+  siteUrl: string;
+  logoUrl?: string;
   createdAt: string;
 }
 
