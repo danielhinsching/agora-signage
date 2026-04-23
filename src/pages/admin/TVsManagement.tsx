@@ -272,6 +272,33 @@ const TVsManagement = () => {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo de TV</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: TVType) =>
+                    setFormData((prev) => ({ ...prev, type: value }))
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="events">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Agenda de Eventos
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="images">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        Galeria de Imagens
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label className="text-sm font-medium">Orientação</Label>
                 <Select
                   value={formData.orientation}
@@ -316,6 +343,80 @@ const TVsManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Image gallery management — only for existing image-type TVs */}
+              {formData.type === "images" && (
+                <div className="space-y-3 pt-2 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Galeria de Imagens</Label>
+                    {editingTV && (
+                      <span className="text-xs text-muted-foreground">
+                        {images.length} imagem(ns)
+                      </span>
+                    )}
+                  </div>
+
+                  {!editingTV ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Salve a TV primeiro para enviar imagens.
+                    </p>
+                  ) : (
+                    <>
+                      <label className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors">
+                        {uploading ? (
+                          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                        ) : (
+                          <Upload className="w-6 h-6 text-muted-foreground" />
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {uploading ? "Enviando..." : "Clique para enviar (JPG, PNG, WEBP)"}
+                        </span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          disabled={uploading}
+                          onChange={(e) => {
+                            handleUploadFiles(e.target.files);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+
+                      {imagesLoading ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : images.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto custom-scrollbar">
+                          {images.map((img) => (
+                            <div
+                              key={img.path}
+                              className="relative group aspect-square rounded-md overflow-hidden border border-border/50 bg-muted"
+                            >
+                              <img
+                                src={img.url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(img)}
+                                className="absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                aria-label="Remover imagem"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
