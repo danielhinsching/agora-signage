@@ -14,6 +14,8 @@ import EventsManagement from "./pages/admin/EventsManagement";
 import LocaisManagement from "./pages/admin/LocaisManagement";
 import TVPlayer from "./pages/TVPlayer";
 import TvPlayerRouter from "./pages/TvPlayerRouter";
+import EmpresasManagement from "./pages/admin/EmpresasManagement";
+import Empresas from "./pages/Empresas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,7 +40,11 @@ const App = () => (
             <Route path="tvs" element={<TVsManagement />} />
             <Route path="events" element={<EventsManagement />} />
             <Route path="locais" element={<LocaisManagement />} />
+            <Route path="empresas" element={<EmpresasManagement />} />
           </Route>
+          
+          {/* Public companies directory */}
+          <Route path="/empresas" element={<Empresas />} />
           
           {/* TV Player Route */}
           <Route path="/tv/:slug" element={<TvPlayerRouter />} />
