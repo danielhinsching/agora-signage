@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTVs } from "@/hooks/useTVs";
-import { TV, TVOrientation } from "@/types";
+import { TV, TVOrientation, TVType } from "@/types";
+import { listTvImages, uploadTvImage, deleteTvImage, deleteAllTvImages, TvImage } from "@/lib/tv-images";
 import { usePersistentForm } from "@/hooks/usePersistentForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
