@@ -197,6 +197,12 @@ const TVsManagement = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Best-effort cleanup of any images attached to this TV
+      try {
+        await deleteAllTvImages(id);
+      } catch (e) {
+        console.warn("Could not clean up images for TV", id, e);
+      }
       await deleteTV(id);
       setDeleteConfirm(null);
     } catch (error) {
@@ -490,17 +496,36 @@ const TVsManagement = () => {
                       </p>
                     </div>
                   </div>
-                  <span className="chip chip-secondary text-xs py-0.5 flex-shrink-0">
-                    {
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span
+                      className={`chip text-xs py-0.5 inline-flex items-center gap-1 ${
+                        tv.type === "images" ? "chip-primary" : "chip-secondary"
+                      }`}
+                    >
+                      {tv.type === "images" ? (
+                        <>
+                          <ImageIcon className="w-3 h-3" />
+                          Imagens
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-3 h-3" />
+                          Eventos
+                        </>
+                      )}
+                    </span>
+                    <span className="chip chip-secondary text-xs py-0.5">
                       {
-                        horizontal: "16:9",
-                        vertical: "9:16",
-                        "vertical-left": "9:16 ↺",
-                        "vertical-right": "9:16 ↻",
-                        mobile: "MOBILE",
-                      }[tv.orientation]
-                    }
-                  </span>
+                        {
+                          horizontal: "16:9",
+                          vertical: "9:16",
+                          "vertical-left": "9:16 ↺",
+                          "vertical-right": "9:16 ↻",
+                          mobile: "MOBILE",
+                        }[tv.orientation]
+                      }
+                    </span>
+                  </div>
                 </div>
 
                 {/* Actions */}
