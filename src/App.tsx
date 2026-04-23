@@ -13,6 +13,7 @@ import TVsManagement from "./pages/admin/TVsManagement";
 import EventsManagement from "./pages/admin/EventsManagement";
 import LocaisManagement from "./pages/admin/LocaisManagement";
 import TVPlayer from "./pages/TVPlayer";
+import TvPlayerRouter from "./pages/TvPlayerRouter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,7 +41,7 @@ const App = () => (
           </Route>
           
           {/* TV Player Route */}
-          <Route path="/tv/:slug" element={<TVPlayer />} />
+          <Route path="/tv/:slug" element={<TvPlayerRouter />} />
           
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />

@@ -2,11 +2,14 @@
 
 export type TVOrientation = 'horizontal' | 'vertical' | 'vertical-left' | 'vertical-right' | 'mobile';
 
+export type TVType = 'events' | 'images';
+
 export interface TV {
   id: string;
   name: string;
   slug: string;
   orientation: TVOrientation;
+  type: TVType;
   createdAt: string;
 }
 

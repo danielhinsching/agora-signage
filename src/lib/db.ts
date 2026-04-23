@@ -1,7 +1,7 @@
 // Supabase Database Services
 // Mantém a mesma API que era usada com Firestore para evitar mudanças nos hooks
 import { supabase } from '@/integrations/supabase/client';
-import { TV, Event, Local, TVOrientation } from '@/types';
+import { TV, TVType, Event, Local, TVOrientation } from '@/types';
 
 const ALLOWED_TV_ORIENTATIONS: TVOrientation[] = [
   'horizontal',
@@ -25,6 +25,7 @@ interface TVRow {
   name: string;
   slug: string;
   orientation: string;
+  type: string | null;
   created_at: string;
 }
 
@@ -48,12 +49,17 @@ interface LocalRow {
   created_at: string;
 }
 
+function normalizeTVType(value: unknown): TVType {
+  return value === 'images' ? 'images' : 'events';
+}
+
 function mapTV(row: TVRow): TV {
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
     orientation: normalizeTVOrientation(row.orientation),
+    type: normalizeTVType(row.type),
     createdAt: row.created_at,
   };
 }
@@ -91,6 +97,7 @@ export async function addTV(tvData: Omit<TV, 'id' | 'createdAt'>): Promise<strin
       name: tvData.name,
       slug: tvData.slug,
       orientation: tvData.orientation as TVOrientation,
+      type: tvData.type,
     })
     .select('id')
     .single();
@@ -99,10 +106,11 @@ export async function addTV(tvData: Omit<TV, 'id' | 'createdAt'>): Promise<strin
 }
 
 export async function updateTV(id: string, updates: Partial<TV>): Promise<void> {
-  const payload: { name?: string; slug?: string; orientation?: TVOrientation } = {};
+  const payload: { name?: string; slug?: string; orientation?: TVOrientation; type?: TVType } = {};
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.slug !== undefined) payload.slug = updates.slug;
   if (updates.orientation !== undefined) payload.orientation = updates.orientation;
+  if (updates.type !== undefined) payload.type = updates.type;
   const { error } = await supabase.from('tvs').update(payload).eq('id', id);
   if (error) throw error;
 }
