@@ -1,7 +1,7 @@
 // Supabase Database Services
 // Mantém a mesma API que era usada com Firestore para evitar mudanças nos hooks
 import { supabase } from '@/integrations/supabase/client';
-import { TV, Event, Local, TVOrientation } from '@/types';
+import { TV, TVType, Event, Local, TVOrientation } from '@/types';
 
 const ALLOWED_TV_ORIENTATIONS: TVOrientation[] = [
   'horizontal',
