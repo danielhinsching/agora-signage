@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      empresas: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          logo_url: string | null
+          nome: string
+          site_url: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          logo_url?: string | null
+          nome: string
+          site_url: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          site_url?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string

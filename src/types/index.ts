@@ -33,6 +33,15 @@ export interface Local {
   createdAt: string;
 }
 
+export interface Empresa {
+  id: string;
+  nome: string;
+  descricao: string;
+  siteUrl: string;
+  logoUrl?: string;
+  createdAt: string;
+}
+
 export interface User {
   username: string;
   isAuthenticated: boolean;
