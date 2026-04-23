@@ -10,11 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "firebase:init": "firebase init",
-    "firebase:deploy": "firebase deploy",
-    "firebase:rules": "firebase deploy --only firestore:rules",
-    "firebase:indexes": "firebase deploy --only firestore:indexes"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
