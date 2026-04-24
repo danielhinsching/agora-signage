@@ -59,10 +59,16 @@ export function EventFormDialog({
   onOpenChange,
   editingEvent,
   seriesEvents,
-  tvs,
+  tvs: tvsProp,
   onSubmit,
   defaultDate,
 }: EventFormDialogProps) {
+  // Only TVs of type "events" can display events on the agenda.
+  // Image-gallery TVs are excluded from selection here.
+  const tvs = useMemo(
+    () => tvsProp.filter((tv) => (tv.type ?? "events") === "events"),
+    [tvsProp]
+  );
   const { locais, addLocal, isLocalUnique } = useLocais();
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
