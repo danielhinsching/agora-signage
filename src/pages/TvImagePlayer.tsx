@@ -151,13 +151,21 @@ export default function TvImagePlayer({ tv }: TvImagePlayerProps) {
             ))}
           </div>
         )}
-      </div>
 
-      {images.length > 0 && (
-        <div className="absolute bottom-6 right-6 z-40 p-2 rounded-xl border border-orange-400 bg-black backdrop-blur-md shadow-[0_0_24px_rgba(251,146,60,0.25)]">
-          <QRCodeSVG value="https://agora-lineup.vercel.app/empresas" size={120} fgColor="#ffffff" bgColor="transparent" />
-        </div>
-      )}
+        {/* QR Code dentro do container rotacionado */}
+        {images.length > 0 && (
+          <div className="absolute bottom-6 left-6 z-40 p-3 rounded-xl border border-orange-400/60 bg-black/70 backdrop-blur-md shadow-[0_0_24px_rgba(251,146,60,0.25)] flex flex-col items-center gap-2">
+            <QRCodeSVG value="https://agora-lineup.vercel.app/empresas" size={160} fgColor="#ffffff" bgColor="transparent" />
+            <div className="flex items-center gap-1.5">
+              <div className="h-px w-6 bg-orange-400/60" />
+              <span className="text-orange-300 text-xs font-light tracking-[0.25em] uppercase">
+                Escaneie-me
+              </span>
+              <div className="h-px w-6 bg-orange-400/60" />
+            </div>
+          </div>
+        )}
+      </div>
 
       <button
         type="button"
