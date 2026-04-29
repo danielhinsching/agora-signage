@@ -155,7 +155,7 @@ export default function TvImagePlayer({ tv }: TvImagePlayerProps) {
         {/* QR Code dentro do container rotacionado */}
         {images.length > 0 && (
           <div className="absolute bottom-6 left-6 z-40 p-3 rounded-xl border border-orange-400/60 bg-black/70 backdrop-blur-md shadow-[0_0_24px_rgba(251,146,60,0.25)] flex flex-col items-center gap-2">
-            <QRCodeSVG value="google.com" size={160} fgColor="#ffffff" bgColor="transparent" />
+            <QRCodeSVG value="https://agora-lineup.vercel.app/empresas" size={160} fgColor="#ffffff" bgColor="transparent" />
             <div className="flex items-center gap-1.5">
               <div className="h-px w-6 bg-orange-400/60" />
               <span className="text-orange-300 text-xs font-light tracking-[0.25em] uppercase">
